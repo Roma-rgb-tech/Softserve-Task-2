@@ -57,8 +57,11 @@ jobs:
         working-directory: ./terraform
 
   packer:
-    name: "Packer Validate"
+    name: "Packer Validate (${{ matrix.template }})"
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        template: [ollama, bastion]
 
     steps:
       - name: Checkout code
@@ -77,12 +80,12 @@ jobs:
 
       - name: Packer Init
         run: packer init .
-        working-directory: ./packer/ollama
+        working-directory: ./packer/${{ matrix.template }}
 
       - name: Packer Format Check
         run: packer fmt -check .
-        working-directory: ./packer/ollama
+        working-directory: ./packer/${{ matrix.template }}
 
       - name: Packer Validate
         run: packer validate .
-        working-directory: ./packer/ollama
+        working-directory: ./packer/${{ matrix.template }}
