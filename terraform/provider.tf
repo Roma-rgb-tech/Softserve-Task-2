@@ -20,7 +20,7 @@ provider "aws" {
 
   default_tags {
     tags = {
-      Environment = "Task1"
+      Environment = "Task2"
       ManagedBy   = "Terraform"
       Project     = "OCG1-Onboarding"
     }
