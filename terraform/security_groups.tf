@@ -1,0 +1,70 @@
+resource "aws_security_group" "bastion" {
+  name        = "${var.environment}-bastion-sg"
+  description = "SSH access to bastion from admin IP only"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "SSH from admin IP"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_cidr]
+  }
+
+  egress {
+    description = "SSH to instances inside the VPC"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
+  tags = {
+    Name = "${var.environment}-bastion-sg"
+  }
+}
+
+resource "aws_security_group" "app" {
+  name        = "${var.environment}-app-sg"
+  description = "LLM instances in private subnets"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description     = "SSH from bastion only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  egress {
+    description = "Outbound internet via NAT for packages and models"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-app-sg"
+  }
+}
+
+resource "aws_security_group" "db" {
+  name        = "${var.environment}-db-sg"
+  description = "PostgreSQL access from app instances only"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description     = "PostgreSQL from app instances"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id]
+  }
+
+  tags = {
+    Name = "${var.environment}-db-sg"
+  }
+}
