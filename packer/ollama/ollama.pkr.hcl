@@ -89,7 +89,7 @@ build {
 
   provisioner "shell" {
     script          = "setup.sh"
-    execute_command = "sudo -E bash '{{ .Path }}'"
+    execute_command = "sudo bash '{{ .Path }}'"
   }
 
   post-processor "manifest" {
