@@ -4,6 +4,9 @@ resource "aws_launch_template" "llm" {
   instance_type          = var.app_instance_type
   key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.app.id]
+  user_data = base64encode(templatefile("${path.module}/templates/alloy.sh.tftpl", {
+    monitoring_ip = aws_instance.monitoring.private_ip
+  }))
 
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_ssm.name
