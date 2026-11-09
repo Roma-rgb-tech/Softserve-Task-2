@@ -1,0 +1,4 @@
+#!/bin/bash
+set -euo pipefail
+echo "PROMETHEUS_REMOTE_WRITE_URL=http://${monitoring_ip}:9090/api/v1/write" >> /etc/default/alloy
+systemctl restart alloy
