@@ -9,6 +9,10 @@ resource "aws_instance" "bastion" {
   subnet_id              = module.network.public_subnet_ids[0]
   vpc_security_group_ids = [aws_security_group.bastion.id]
   key_name               = aws_key_pair.main.key_name
+  user_data = templatefile("${path.module}/templates/alloy.sh.tftpl", {
+    monitoring_ip = aws_instance.monitoring.private_ip
+  })
+  user_data_replace_on_change = true
 
   metadata_options {
     http_tokens   = "required"

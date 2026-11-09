@@ -19,6 +19,14 @@ resource "aws_security_group" "bastion" {
     cidr_blocks = [var.vpc_cidr]
   }
 
+  egress {
+    description = "Prometheus remote write to monitoring host"
+    from_port   = 9090
+    to_port     = 9090
+    protocol    = "tcp"
+    cidr_blocks = [var.vpc_cidr]
+  }
+
   tags = {
     Name = "${var.environment}-bastion-sg"
   }
@@ -88,6 +96,14 @@ resource "aws_security_group" "monitoring" {
     to_port         = 22
     protocol        = "tcp"
     security_groups = [aws_security_group.bastion.id]
+  }
+
+  ingress {
+    description     = "Prometheus remote write from Alloy agents"
+    from_port       = 9090
+    to_port         = 9090
+    protocol        = "tcp"
+    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id]
   }
 
   egress {
