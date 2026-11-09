@@ -7,7 +7,7 @@ prometheus.scrape "node" {
 
 prometheus.remote_write "monitoring" {
     endpoint {
-        url = sys.env("PROMETHEUS_REMOTE_WRITE_URL)
+        url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
     }
 
     external_labels = {
