@@ -4,6 +4,10 @@ resource "grafana_data_source" "prometheus" {
   uid        = "prometheus"
   url        = "http://localhost:9090"
   is_default = true
+
+  json_data_encoded = jsonencode({
+    timeInterval = "60s"
+  })
 }
 
 resource "grafana_data_source" "cloudwatch" {
@@ -15,6 +19,8 @@ resource "grafana_data_source" "cloudwatch" {
     authType      = "default"
     defaultRegion = var.aws_region
   })
+
+  depends_on = [grafana_data_source.prometheus]
 }
 
 resource "grafana_data_source" "alertmanager" {
@@ -27,4 +33,6 @@ resource "grafana_data_source" "alertmanager" {
     implementation             = "prometheus"
     handleGrafanaManagedAlerts = true
   })
+
+  depends_on = [grafana_data_source.prometheus]
 }
