@@ -1,11 +1,9 @@
 resource "aws_launch_template" "llm" {
   name_prefix            = "${var.environment}-llm-"
-  image_id               = data.aws_ami.ubuntu.id
+  image_id               = data.aws_ami.ollama.id
   instance_type          = var.app_instance_type
   key_name               = aws_key_pair.main.key_name
   vpc_security_group_ids = [aws_security_group.app.id]
-  user_data              = filebase64("${path.module}/scripts/install_ollama.sh")
-
 
   iam_instance_profile {
     name = aws_iam_instance_profile.ec2_ssm.name
@@ -47,7 +45,7 @@ resource "aws_autoscaling_group" "llm" {
 
   launch_template {
     id      = aws_launch_template.llm.id
-    version = "$Latest"
+    version = aws_launch_template.llm.latest_version
   }
 
   instance_refresh {
