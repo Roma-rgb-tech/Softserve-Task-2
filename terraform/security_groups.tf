@@ -68,3 +68,38 @@ resource "aws_security_group" "db" {
     Name = "${var.environment}-db-sg"
   }
 }
+
+resource "aws_security_group" "monitoring" {
+  name        = "${var.environment}-monitoring-sg"
+  description = "Monitoring host with Grafana, Prometheus and Alertmanager"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "Grafana from admin IP"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_cidr]
+  }
+
+  ingress {
+    description     = "SSH from bastion only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  egress {
+    description = "Outbound for AWS APIs, Slack and packages"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-monitoring-sg"
+  }
+}
