@@ -72,6 +72,23 @@ resource "aws_iam_role_policy" "monitoring_cloudwatch_read" {
   })
 }
 
+resource "aws_iam_role_policy" "monitoring_grafana_secret_read" {
+  name = "grafana-secret-read"
+  role = aws_iam_role.monitoring.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ReadGrafanaAdminPassword"
+        Effect   = "Allow"
+        Action   = "ssm:GetParameter"
+        Resource = aws_ssm_parameter.grafana_admin_password.arn
+      }
+    ]
+  })
+}
+
 resource "aws_iam_role_policy_attachment" "monitoring_ssm" {
   role       = aws_iam_role.monitoring.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
