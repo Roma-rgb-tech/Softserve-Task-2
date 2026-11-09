@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 cloud-init status --wait
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y --no-install-recommends curl gpg prometheus prometheus-alertmanager
+apt-get install -y --no-install-recommends curl gpg unzip prometheus prometheus-alertmanager
 
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
@@ -26,6 +26,11 @@ install -d -o grafana -g grafana /var/lib/grafana/dashboards
 
 install -m 0644 /tmp/config.alloy /etc/alloy/config.alloy
 
-systemctl enable prometheus prometheus-alertmanager grafana-server alloy
+curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+aws --version
+rm -rf /tmp/aws /tmp/awscliv2.zip
+systemctl enable prometheus prometheus-alertmanager  alloy
 
 cloud-init clean --logs
