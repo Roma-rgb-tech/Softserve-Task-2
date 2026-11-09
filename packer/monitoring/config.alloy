@@ -1,0 +1,16 @@
+prometheus.exporter.unix "node" { }
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
+prometheus.remote_write "monitoring" {
+  endpoint {
+    url = "http://localhost:9090/api/v1/write"
+  }
+
+  external_labels = {
+    role = "monitoring",
+  }
+}
