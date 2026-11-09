@@ -61,7 +61,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        template: [ollama, bastion]
+        template: [ollama, bastion, monitoring]
 
     steps:
       - name: Checkout code
