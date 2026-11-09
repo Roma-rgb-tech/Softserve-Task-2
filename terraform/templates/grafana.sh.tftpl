@@ -1,0 +1,6 @@
+#!/bin/bash
+set -euo pipefail
+password=$(aws ssm get-parameter --region "${region}" --name "${parameter_name}" --with-decryption --query Parameter.Value --output text)
+echo "GF_SECURITY_ADMIN_PASSWORD=$password" >> /etc/default/grafana-server
+chmod 0600 /etc/default/grafana-server
+systemctl enable --now grafana-server
