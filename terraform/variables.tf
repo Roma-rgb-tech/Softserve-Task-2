@@ -84,3 +84,9 @@ variable "db_instance_class" {
   type        = string
   default     = "db.t3.micro"
 }
+
+variable "monitoring_instance_type" {
+  description = "Instance type for the monitoring host"
+  type        = string
+  default     = "t3.small"
+}

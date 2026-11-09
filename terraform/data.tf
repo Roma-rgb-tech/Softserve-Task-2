@@ -27,3 +27,18 @@ data "aws_ami" "bastion" {
     values = ["available"]
   }
 }
+
+data "aws_ami" "monitoring" {
+  most_recent = true
+  owners      = ["self"]
+
+  filter {
+    name   = "tag:Role"
+    values = ["monitoring"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
