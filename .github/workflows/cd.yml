@@ -16,13 +16,19 @@ permissions:
   id-token: write
   contents: read
 
+concurrency:
+  group: terraform-cd
+  cancel-in-progress: false
+
 jobs:
   cd:
-    name: "Terraform Execution"
+    name: "Terraform ${{ inputs.action }}"
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       TF_VAR_admin_cidr: ${{ vars.ADMIN_CIDR }}
       TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
+      ACTION: ${{ inputs.action }}
 
     defaults:
       run:
@@ -36,6 +42,7 @@ jobs:
         uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.17.1"
+          terraform_wrapper: false
 
       - name: Configure AWS Credentials via OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -44,13 +51,37 @@ jobs:
           aws-region: eu-north-1
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -input=false
 
-      - name: Terraform Apply or Destroy
+      - name: Terraform Apply
+        if: env.ACTION == 'apply'
+        run: terraform apply -auto-approve -input=false
+
+      - name: Read monitoring outputs
         run: |
-          ACTION="${{ github.event.inputs.action }}"
-          if [ "$ACTION" == "destroy" ]; then
-            terraform destroy -auto-approve -input=false
-          else
-            terraform apply -auto-approve -input=false
-          fi
+          echo "GRAFANA_URL=$(terraform output -raw grafana_url 2>/dev/null || true)" >> "$GITHUB_ENV"
+          echo "MONITORING_SG_ID=$(terraform output -raw monitoring_security_group_id 2>/dev/null || true)" >> "$GITHUB_ENV"
+          echo "RUNNER_CIDR=$(curl -fsS https://checkip.amazonaws.com)/32" >> "$GITHUB_ENV"
+
+      - name: Allow runner to reach Grafana
+        if: env.MONITORING_SG_ID != ''
+        run: aws ec2 authorize-security-group-ingress --group-id "$MONITORING_SG_ID" --protocol tcp --port 3000 --cidr "$RUNNER_CIDR"
+
+      - name: Wait for Grafana
+        if: env.MONITORING_SG_ID != ''
+        run: curl -fsS --retry 30 --retry-delay 10 --retry-all-errors "$GRAFANA_URL/api/health"
+
+      - name: Grafana ${{ inputs.action }}
+        if: env.MONITORING_SG_ID != ''
+        working-directory: ./terraform/grafana
+        run: |
+          terraform init -input=false
+          terraform "$ACTION" -auto-approve -input=false
+
+      - name: Revoke runner access to Grafana
+        if: always() && env.MONITORING_SG_ID != ''
+        run: aws ec2 revoke-security-group-ingress --group-id "$MONITORING_SG_ID" --protocol tcp --port 3000 --cidr "$RUNNER_CIDR" || true
+
+      - name: Terraform Destroy
+        if: env.ACTION == 'destroy'
+        run: terraform destroy -auto-approve -input=false

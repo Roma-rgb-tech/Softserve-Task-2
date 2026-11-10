@@ -82,7 +82,7 @@ build {
   sources = ["source.amazon-ebs.monitoring"]
 
   provisioner "file" {
-    sources     = ["config.alloy", "prometheus", "alertmanager", "grafana"]
+    sources     = ["config.alloy", "prometheus", "alertmanager"]
     destination = "/tmp/"
   }
 

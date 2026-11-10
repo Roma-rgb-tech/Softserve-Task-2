@@ -20,10 +20,6 @@ promtool check config /etc/prometheus/prometheus.yml
 install -m 0644 /tmp/alertmanager/alertmanager.yml /etc/prometheus/alertmanager.yml
 amtool check-config /etc/prometheus/alertmanager.yml
 
-install -m 0644 /tmp/grafana/datasources.yaml /etc/grafana/provisioning/datasources/datasources.yaml
-install -m 0644 /tmp/grafana/dashboards.yaml /etc/grafana/provisioning/dashboards/dashboards.yaml
-install -d -o grafana -g grafana /var/lib/grafana/dashboards
-
 install -m 0644 /tmp/config.alloy /etc/alloy/config.alloy
 
 curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip

@@ -13,3 +13,7 @@ output "grafana_url" {
 output "grafana_admin_password_parameter" {
   value = aws_ssm_parameter.grafana_admin_password.name
 }
+
+output "monitoring_security_group_id" {
+  value = aws_security_group.monitoring.id
+}
