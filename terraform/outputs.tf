@@ -17,3 +17,7 @@ output "grafana_admin_password_parameter" {
 output "monitoring_security_group_id" {
   value = aws_security_group.monitoring.id
 }
+
+output "alb_dns_name" {
+  value = aws_lb.llm.dns_name
+}
