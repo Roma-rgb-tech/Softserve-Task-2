@@ -1,4 +1,10 @@
-prometheus.exporter.unix "node" { }
+prometheus.exporter.unix "node" {
+  enable_collectors = ["systemd"]
+
+  systemd {
+    unit_include = "(alloy\\.service|ssh\\.(service|socket))"
+  }
+ }
 
 prometheus.scrape "node" {
   targets    = prometheus.exporter.unix.node.targets
