@@ -45,6 +45,14 @@ resource "aws_security_group" "app" {
     security_groups = [aws_security_group.bastion.id]
   }
 
+  ingress {
+    description     = "Ollama API from ALB"
+    from_port       = 11434
+    to_port         = 11434
+    protocol        = "tcp"
+    security_groups = [aws_security_group.alb.id]
+  }
+
   egress {
     description = "Outbound internet via NAT for packages and models"
     from_port   = 0
@@ -117,5 +125,31 @@ resource "aws_security_group" "monitoring" {
 
   tags = {
     Name = "${var.environment}-monitoring-sg"
+  }
+}
+
+resource "aws_security_group" "alb" {
+  name        = "${var.environment}-alb-sg"
+  description = "Internal ALB in front of Ollama"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "HTTP from monitoring host"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.public_subnet_cidrs[1]]
+  }
+
+  egress {
+    description = "Ollama API on LLM instances"
+    from_port   = 11434
+    to_port     = 11434
+    protocol    = "tcp"
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
+  tags = {
+    Name = "${var.environment}-alb-sg"
   }
 }
