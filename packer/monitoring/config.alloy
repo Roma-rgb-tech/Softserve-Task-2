@@ -1,4 +1,10 @@
-prometheus.exporter.unix "node" { }
+prometheus.exporter.unix "node" {
+  enable_collectors = ["systemd"]
+
+  systemd {
+    unit_include = "(prometheus|prometheus-alertmanager|grafana-server|alloy)\\.service"
+  }
+}
 
 prometheus.scrape "node" {
   targets    = prometheus.exporter.unix.node.targets
