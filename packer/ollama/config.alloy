@@ -1,13 +1,19 @@
-prometheus.exporter.unix "node" { }
+prometheus.exporter.unix "node" {
+    enable_collectors = ["systemd]
+
+    systemd {
+        unit_include = "(ollama|alloy)\\.service"
+    }
+}
 
 prometheus.scrape "node" {
     targets = prometheus.exporter.unix.node.targets
     forward_to = [prometheus.remote_write.monitoring.receiver]
 }
 
-prometheus.remote_write "monitoring" {
+prometheus.remote_write "monitroing" {
     endpoint {
-        url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
+        url = sys.env("PROMETHEUS_REMOTE_WRITE_URL)
     }
 
     external_labels = {
