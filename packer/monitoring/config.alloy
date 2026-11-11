@@ -20,3 +20,73 @@ prometheus.remote_write "monitoring" {
     role = "monitoring",
   }
 }
+
+prometheus.exporter.cloudwatch "aws" {
+  sts_region = "eu-north-1"
+
+  discovery {
+    type        = "AWS/RDS"
+    regions     = ["eu-north-1"]
+    search_tags = {
+      Project = "OCG1-Onboarding",
+    }
+
+    metric {
+      name       = "CPUUtilization"
+      statistics = ["Average"]
+      period     = "5m"
+      length     = "10m"
+    }
+
+    metric {
+      name       = "FreeableMemory"
+      statistics = ["Average"]
+      period     = "5m"
+      length     = "10m"
+    }
+
+    metric {
+      name       = "FreeStorageSpace"
+      statistics = ["Average"]
+      period     = "5m"
+      length     = "10m"
+    }
+  }
+
+  discovery {
+    type        = "AWS/ApplicationELB"
+    regions     = ["eu-north-1"]
+    search_tags = {
+      Project = "OCG1-Onboarding",
+    }
+
+    metric {
+      name       = "HealthyHostCount"
+      statistics = ["Minimum"]
+      period     = "1m"
+      length     = "5m"
+    }
+
+    metric {
+      name        = "HTTPCode_Target_4XX_Count"
+      statistics  = ["Sum"]
+      period      = "5m"
+      length      = "5m"
+      nil_to_zero = true
+    }
+
+    metric {
+      name        = "HTTPCode_Target_5XX_Count"
+      statistics  = ["Sum"]
+      period      = "5m"
+      length      = "5m"
+      nil_to_zero = true
+    }
+  }
+}
+
+prometheus.scrape "cloudwatch" {
+  targets         = prometheus.exporter.cloudwatch.aws.targets
+  forward_to      = [prometheus.remote_write.monitoring.receiver]
+  scrape_interval = "1m"
+}
