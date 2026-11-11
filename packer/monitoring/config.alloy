@@ -25,8 +25,9 @@ prometheus.exporter.cloudwatch "aws" {
   sts_region = "eu-north-1"
 
   discovery {
-    type        = "AWS/RDS"
-    regions     = ["eu-north-1"]
+    type                        = "AWS/RDS"
+    regions                     = ["eu-north-1"]
+    dimension_name_requirements = ["DBInstanceIdentifier"]
     search_tags = {
       Project = "OCG1-Onboarding",
     }
@@ -54,8 +55,9 @@ prometheus.exporter.cloudwatch "aws" {
   }
 
   discovery {
-    type        = "AWS/ApplicationELB"
-    regions     = ["eu-north-1"]
+    type                        = "AWS/ApplicationELB"
+    regions                     = ["eu-north-1"]
+    dimension_name_requirements = ["LoadBalancer", "TargetGroup"]
     search_tags = {
       Project = "OCG1-Onboarding",
     }
