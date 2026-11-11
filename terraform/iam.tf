@@ -99,3 +99,20 @@ resource "aws_iam_instance_profile" "monitoring" {
   name = "${var.environment}-monitoring-instance-profile"
   role = aws_iam_role.monitoring.name
 }
+
+resource "aws_iam_role_policy" "monitoring_sns_publish" {
+  name = "sns-publish"
+  role = aws_iam_role.monitoring.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "PublishAlerts"
+        Effect   = "Allow"
+        Action   = "sns:Publish"
+        Resource = aws_sns_topic.alerts.arn
+      }
+    ]
+  })
+}
