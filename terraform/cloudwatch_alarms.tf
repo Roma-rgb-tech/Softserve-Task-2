@@ -20,11 +20,11 @@ locals {
   }
 
   elb_error_alarms = {
-    "4xx" = {
+    "4xx-errors" = {
       metric    = "HTTPCode_Target_4XX_Count"
       threshold = 20
     }
-    "5xx" = {
+    "5xx-errors" = {
       metric    = "HTTPCode_Target_4XX_Count"
       threshold = 5
     }
