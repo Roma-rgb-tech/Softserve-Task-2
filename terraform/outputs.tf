@@ -21,3 +21,7 @@ output "monitoring_security_group_id" {
 output "alb_dns_name" {
   value = aws_lb.llm.dns_name
 }
+
+output "alerts_topic_arn" {
+  value = aws_sns_topic.alerts.arn
+}
