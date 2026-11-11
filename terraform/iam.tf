@@ -60,6 +60,7 @@ resource "aws_iam_role_policy" "monitoring_cloudwatch_read" {
           "cloudwatch:DescribeAlarms",
           "cloudwatch:ListMetrics",
           "cloudwatch:GetMetricData",
+          "cloudwatch:GetMetricStatistics",
           "cloudwatch:GetInsightRuleReport",
           "ec2:DescribeTags",
           "ec2:DescribeInstances",
