@@ -5,9 +5,14 @@ resource "aws_instance" "monitoring" {
   vpc_security_group_ids = [aws_security_group.monitoring.id]
   key_name               = aws_key_pair.main.key_name
   iam_instance_profile   = aws_iam_instance_profile.monitoring.name
-  user_data = templatefile("${path.module}/templates/grafana.sh.tftpl", {
-    region         = var.aws_region
-    parameter_name = aws_ssm_parameter.grafana_admin_password.name
+  user_data = templatefile("${path.module}/templates/monitoring.sh.tftpl", {
+    region                     = var.aws_region
+    grafana_password_parameter = aws_ssm_parameter.grafana_admin_password.name
+    slack_webhook_parameter    = aws_ssm_parameter.slack_webhook_url.name
+    alertmanager_config = templatefile("${path.module}/templates/alertmanager.yml.tftpl", {
+      topic_arn = aws_sns_topic.alerts.arn
+      region    = var.aws_region
+    })
   })
   user_data_replace_on_change = true
 

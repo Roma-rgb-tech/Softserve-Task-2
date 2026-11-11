@@ -1,0 +1,16 @@
+#!/bin/bash
+set -euo pipefail
+
+password=$(aws ssm get-parameter --region "${region}" --name "${grafana_password_parameter}" --with-decryption --query Parameter.Value --output text)
+echo "GF_SECURITY_ADMIN_PASSWORD=$password" >> /etc/default/grafana-server
+chmod 0600 /etc/default/grafana-server
+systemctl enable --now grafana-server
+
+(umask 077 && aws ssm get-parameter --region "${region}" --name "${slack_webhook_parameter}" --with-decryption --query Parameter.Value --output text > /etc/prometheus/slack_webhook_url)
+chown prometheus:prometheus /etc/prometheus/slack_webhook_url
+
+cat > /etc/prometheus/alertmanager.yml <<'EOF'
+${alertmanager_config}
+EOF
+amtool check-config /etc/prometheus/alertmanager.yml
+systemctl restart prometheus-alertmanager
