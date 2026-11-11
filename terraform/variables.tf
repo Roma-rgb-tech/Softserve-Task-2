@@ -94,4 +94,5 @@ variable "monitoring_instance_type" {
 variable "alert_email" {
   description = "Email address for CloudWatch alarm notifications"
   type        = string
+  sensitive   = true
 }
