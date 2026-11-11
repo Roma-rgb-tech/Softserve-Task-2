@@ -13,3 +13,14 @@ resource "aws_ssm_parameter" "grafana_admin_password" {
     Name = "${var.environment}-grafana-admin-password"
   }
 }
+
+#tfsec:ignore:aws-ssm-secret-use-customer-key
+resource "aws_ssm_parameter" "slack_webhook_url" {
+  name  = "/${lower(var.environment)}/alertmanager/slack-webhook-url"
+  type  = "SecureString"
+  value = var.slack_webhook_url
+
+  tags = {
+    Name = "${var.environment}-slack-webhook-url"
+  }
+}
