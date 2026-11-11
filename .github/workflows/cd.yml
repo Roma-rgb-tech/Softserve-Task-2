@@ -55,6 +55,15 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
+      - name: Debug alert email
+        if: env.ACTION == 'apply'
+        run: |
+          echo "length: $(printf '%s' "$TF_VAR_alert_email" | wc -c)"
+          printf '%s' "$TF_VAR_alert_email" | od -c
+          echo 'nonsensitive(var.alert_email)' | terraform console
+          aws sns subscribe --region eu-north-1 --topic-arn "$(terraform output -raw alerts_topic_arn)" --protocol email --notification-endpoint "$TF_VAR_alert_email" --return-subscription-arn || true
+
+
       - name: Terraform Apply
         if: env.ACTION == 'apply'
         run: terraform apply -auto-approve -input=false
