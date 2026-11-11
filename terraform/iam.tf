@@ -116,3 +116,20 @@ resource "aws_iam_role_policy" "monitoring_sns_publish" {
     ]
   })
 }
+
+resource "aws_iam_role_policy" "monitoring_slack_webhook_read" {
+  name = "slack-webhook-read"
+  role = aws_iam_role.monitoring.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid      = "ReadSlackWebhook"
+        Effect   = "Allow"
+        Action   = "ssm:GetParameter"
+        Resource = aws_ssm_parameter.slack_webhook_url.arn
+      }
+    ]
+  })
+}
