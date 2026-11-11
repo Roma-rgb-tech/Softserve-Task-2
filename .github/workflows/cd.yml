@@ -28,6 +28,7 @@ jobs:
     env:
       TF_VAR_admin_cidr: ${{ vars.ADMIN_CIDR }}
       TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
+      TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
       ACTION: ${{ inputs.action }}
 
     defaults:

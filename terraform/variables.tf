@@ -90,3 +90,9 @@ variable "monitoring_instance_type" {
   type        = string
   default     = "t3.small"
 }
+
+variable "alert_email" {
+  description = "Email address for alert notifications"
+  type        = string
+  sensitive   = true
+}
