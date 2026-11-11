@@ -96,3 +96,9 @@ variable "alert_email" {
   type        = string
   sensitive   = true
 }
+
+variable "slack_webhook_url" {
+  description = "Slack incoming webhook URL for Alertmanager"
+  type        = string
+  sensitive   = true
+}
