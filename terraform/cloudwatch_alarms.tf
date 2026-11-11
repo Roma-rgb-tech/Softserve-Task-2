@@ -4,7 +4,7 @@ locals {
   db_alarms = {
     cpu = {
       metric     = "CPUUtilization"
-      comparsion = "GreaterThanThreshold"
+      comparison = "GreaterThanThreshold"
       threshold  = 80
     }
     memory = {
@@ -20,23 +20,22 @@ locals {
   }
 
   elb_error_alarms = {
-    "4xx-errors" = {
+    "4XX-errors" = {
       metric    = "HTTPCode_Target_4XX_Count"
       threshold = 20
     }
-    "5xx-errors" = {
-      metric    = "HTTPCode_Target_4XX_Count"
+    "5XX-errors" = {
+      metric    = "HTTPCode_Target_5XX_Count"
       threshold = 5
     }
   }
 }
 
-
 resource "aws_cloudwatch_metric_alarm" "db" {
   for_each = local.db_alarms
 
   alarm_name          = "[llm]-[test]-[db]-[high]-[${each.key}]"
-  alarm_description   = "RDS ${each.value.metric} on  ${aws_db_instance.postgres.identifier}"
+  alarm_description   = "RDS ${each.value.metric} on ${aws_db_instance.postgres.identifier}"
   namespace           = "AWS/RDS"
   metric_name         = each.value.metric
   statistic           = "Average"
