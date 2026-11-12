@@ -102,3 +102,9 @@ variable "slack_webhook_url" {
   type        = string
   sensitive   = true
 }
+
+variable "open_webui_instance_type" {
+  description = "Instance type for Open WebUI host"
+  type        = string
+  default     = "t3.medium"
+}
