@@ -25,3 +25,7 @@ output "alb_dns_name" {
 output "alerts_topic_arn" {
   value = aws_sns_topic.alerts.arn
 }
+
+output "open_webui_url" {
+  value = "http://${aws_instance.open_webui.public_ip}:8080"
+}
