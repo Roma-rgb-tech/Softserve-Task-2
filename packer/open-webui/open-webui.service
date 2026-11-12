@@ -1,0 +1,17 @@
+[Unit]
+Description=Open WebUI
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/open-webui.env
+
+[Service]
+EnvironmentFile=/etc/default/open-webui
+ExecStartPre=-/usr/bin/docker rm -f open-webui
+ExecStart=/usr/bin/docker run --rm --name open-webui --network host --env-file /etc/open-webui.env -v open-webui:/app/backend/data ${OPEN_WEBUI_IMAGE}
+ExecStop=/usr/bin/docker stop open-webui
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

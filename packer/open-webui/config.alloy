@@ -1,0 +1,36 @@
+prometheus.exporter.unix "node" {
+  enable_collectors = ["systemd"]
+
+  systemd {
+    unit_include = "(docker|open-webui|alloy)\\.service"
+  }
+}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
+otelcol.receiver.otlp "open_webui" {
+  grpc {
+    endpoint = "127.0.0.1:4317"
+  }
+
+  output {
+    metrics = [otelcol.exporter.prometheus.open_webui.input]
+  }
+}
+
+otelcol.exporter.prometheus "open_webui" {
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
+prometheus.remote_write "monitoring" {
+  endpoint {
+    url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
+  }
+
+  external_labels = {
+    role = "open-webui",
+  }
+}
