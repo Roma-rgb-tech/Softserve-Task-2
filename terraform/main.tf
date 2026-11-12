@@ -8,4 +8,5 @@ module "network" {
   db_subnet_cidrs      = var.db_subnet_cidrs
   availability_zones   = var.availability_zones
   enable_nat_gateway   = var.enable_nat_gateway
+  db_client_cidrs      = concat(var.private_subnet_cidrs, [var.public_subnet_cidrs[0]])
 }

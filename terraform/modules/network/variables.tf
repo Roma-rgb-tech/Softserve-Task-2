@@ -33,3 +33,8 @@ variable "db_subnet_cidrs" {
   type        = list(string)
   description = "Database subnet CIDR blocks"
 }
+
+variable "db_client_cidrs" {
+  type        = list(string)
+  description = "CIDR blocks allowed to reach the database subnet"
+}
