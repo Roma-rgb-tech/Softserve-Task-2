@@ -2,7 +2,7 @@ prometheus.exporter.unix "node" {
   enable_collectors = ["systemd"]
 
   systemd {
-    unit_include = "(prometheus|prometheus-alertmanager|grafana-server|alloy)\\.service"
+    unit_include = "(prometheus|prometheus-alertmanager|grafana-server|alloy|docker|open-webui)\\.service"
   }
 }
 
@@ -91,4 +91,18 @@ prometheus.scrape "cloudwatch" {
   targets         = prometheus.exporter.cloudwatch.aws.targets
   forward_to      = [prometheus.remote_write.monitoring.receiver]
   scrape_interval = "1m"
+}
+
+otelcol.receiver.otlp "open_webui" {
+  grpc {
+    endpoint = "127.0.0.1:4317"
+  }
+
+  output {
+    metrics = [otelcol.exporter.prometheus.open_webui.input]
+  }
+}
+
+otelcol.exporter.prometheus "open_webui" {
+  forward_to = [prometheus.remote_write.monitoring.receiver]
 }
