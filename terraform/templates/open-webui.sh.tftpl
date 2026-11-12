@@ -1,0 +1,36 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "PROMETHEUS_REMOTE_WRITE_URL=http://${monitoring_ip}:9090/api/v1/write" >> /etc/default/alloy
+systemctl restart alloy
+
+db_password=$(aws ssm get-parameter --region "${region}" --name "${db_password_parameter}" --with-decryption --query Parameter.Value --output text)
+secret_key=$(aws ssm get-parameter --region "${region}" --name "${secret_key_parameter}" --with-decryption --query Parameter.Value --output text)
+
+export PGHOST="${db_host}" PGDATABASE="${db_name}" PGUSER="${db_master_username}" PGSSLMODE=require
+PGPASSWORD=$(aws secretsmanager get-secret-value --region "${region}" --secret-id "${db_master_secret_arn}" --query SecretString --output text | python3 -c 'import json, sys; print(json.load(sys.stdin)["password"])')
+export PGPASSWORD
+
+until pg_isready -q; do sleep 5; done
+
+psql -v ON_ERROR_STOP=1 -v password="$db_password" <<'SQL'
+SELECT 'CREATE ROLE openwebui LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'openwebui')\gexec
+ALTER ROLE openwebui WITH PASSWORD :'password';
+GRANT openwebui TO CURRENT_USER;
+SELECT 'CREATE DATABASE openwebui OWNER openwebui' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'openwebui')\gexec
+SQL
+unset PGPASSWORD
+
+(umask 077 && cat > /etc/open-webui.env <<EOF
+DATABASE_URL=postgresql://openwebui:$db_password@${db_host}:5432/openwebui?sslmode=require
+WEBUI_SECRET_KEY=$secret_key
+OLLAMA_BASE_URL=http://${ollama_host}
+ENABLE_SIGNUP=false
+ENABLE_OTEL=true
+ENABLE_OTEL_METRICS=true
+OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317
+OTEL_EXPORTER_OTLP_INSECURE=true
+EOF
+)
+
+systemctl start open-webui
