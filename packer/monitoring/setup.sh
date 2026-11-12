@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 cloud-init status --wait
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y --no-install-recommends curl gpg unzip prometheus prometheus-alertmanager
+apt-get install -y --no-install-recommends curl gpg unzip prometheus prometheus-alertmanager docker.io postgresql-client
 
 mkdir -p /etc/apt/keyrings
 curl -fsSL https://apt.grafana.com/gpg.key | gpg --dearmor -o /etc/apt/keyrings/grafana.gpg
@@ -21,12 +21,20 @@ install -m 0644 /tmp/alertmanager/alertmanager.yml /etc/prometheus/alertmanager.
 amtool check-config /etc/prometheus/alertmanager.yml
 
 install -m 0644 /tmp/config.alloy /etc/alloy/config.alloy
+alloy fmt /etc/alloy/config.alloy > /dev/null
 
 curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
 unzip -q /tmp/awscliv2.zip -d /tmp
 /tmp/aws/install
 aws --version
 rm -rf /tmp/aws /tmp/awscliv2.zip
-systemctl enable prometheus prometheus-alertmanager  alloy
+
+systemctl enable --now docker
+docker pull "ghcr.io/open-webui/open-webui:${OPEN_WEBUI_VERSION}"
+echo "OPEN_WEBUI_IMAGE=ghcr.io/open-webui/open-webui:${OPEN_WEBUI_VERSION}" > /etc/default/open-webui
+install -m 0644 /tmp/open-webui.service /etc/systemd/system/open-webui.service
+systemctl daemon-reload
+
+systemctl enable prometheus prometheus-alertmanager alloy open-webui
 
 cloud-init clean --logs
