@@ -17,6 +17,11 @@ variable "build_version" {
   default = "1.0.0"
 }
 
+variable "open_webui_version" {
+  type = string
+  default = "v0.13.3"
+}
+
 variable "git_commit" {
   type    = string
   default = "local"
@@ -73,6 +78,7 @@ source "amazon-ebs" "monitoring" {
     BuildVersion = var.build_version
     BuildDate    = local.timestamp
     GitCommit    = var.git_commit
+    OpenWebUI    = var.open_webui_version
     BaseAMI      = "{{ .SourceAMI}}"
     BaseAMIName  = "{{ .SourceAMIName}}"
   }
@@ -82,13 +88,14 @@ build {
   sources = ["source.amazon-ebs.monitoring"]
 
   provisioner "file" {
-    sources     = ["config.alloy", "prometheus", "alertmanager"]
+    sources     = ["config.alloy", "prometheus", "alertmanager", "open-webui.service"]
     destination = "/tmp/"
   }
 
   provisioner "shell" {
     script          = "setup.sh"
-    execute_command = "sudo bash '{{ .Path }}'"
+    environment_vars = ["OPEN_WEBUI_VERSION=${var.open_webui_version}"]
+    execute_command = "sudo {{ .Vars }} bash '{{ .Path }}'"
   }
 
   post-processor "manifest" {
