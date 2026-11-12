@@ -24,3 +24,35 @@ resource "aws_ssm_parameter" "slack_webhook_url" {
     Name = "${var.environment}-slack-webhook-url"
   }
 }
+
+resource "random_password" "open_webui_db" {
+  length  = 32
+  special = false
+}
+
+resource "random_password" "open_webui_secret_key" {
+  length  = 64
+  special = false
+}
+
+#tfsec:ignore:aws-ssm-secret-use-customer-key
+resource "aws_ssm_parameter" "open_webui_db_password" {
+  name  = "/${lower(var.environment)}/open-webui/db-password"
+  type  = "SecureString"
+  value = random_password.open_webui_db.result
+
+  tags = {
+    Name = "${var.environment}-open-webui-db-password"
+  }
+}
+
+#tfsec:ignore:aws-ssm-secret-use-customer-key
+resource "aws_ssm_parameter" "open_webui_secret_key" {
+  name  = "/${lower(var.environment)}/open-webui/secret-key"
+  type  = "SecureString"
+  value = random_password.open_webui_secret_key.result
+
+  tags = {
+    Name = "${var.environment}-open-webui-secret-key"
+  }
+}
