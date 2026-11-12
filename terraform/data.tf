@@ -42,3 +42,18 @@ data "aws_ami" "monitoring" {
     values = ["available"]
   }
 }
+
+data "aws_ami" "open_webui" {
+  most_recent = true
+  owners      = ["self"]
+
+  filter {
+    name   = "tag:Role"
+    values = ["open-webui"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
