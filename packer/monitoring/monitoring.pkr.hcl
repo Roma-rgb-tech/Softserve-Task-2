@@ -18,7 +18,7 @@ variable "build_version" {
 }
 
 variable "open_webui_version" {
-  type = string
+  type    = string
   default = "v0.13.3"
 }
 
@@ -93,9 +93,9 @@ build {
   }
 
   provisioner "shell" {
-    script          = "setup.sh"
+    script           = "setup.sh"
     environment_vars = ["OPEN_WEBUI_VERSION=${var.open_webui_version}"]
-    execute_command = "sudo {{ .Vars }} bash '{{ .Path }}'"
+    execute_command  = "sudo {{ .Vars }} bash '{{ .Path }}'"
   }
 
   post-processor "manifest" {
