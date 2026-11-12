@@ -133,3 +133,56 @@ resource "aws_iam_role_policy" "monitoring_slack_webhook_read" {
     ]
   })
 }
+
+resource "aws_iam_role" "open_webui" {
+  name = "${var.environment}-open-webui-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "open_webui_secrets_read" {
+  name = "secrets-read"
+  role = aws_iam_role.open_webui.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ReadOpenWebUIParameters"
+        Effect = "Allow"
+        Action = "ssm:GetParameter"
+        Resource = [
+          aws_ssm_parameter.open_webui_db_password.arn,
+          aws_ssm_parameter.open_webui_secret_key.arn
+        ]
+      },
+      {
+        Sid      = "ReadDatabaseMasterSecret"
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = aws_db_instance.postgres.master_user_secret[0].secret_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "open_webui_ssm" {
+  role       = aws_iam_role.open_webui.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "open_webui" {
+  name = "${var.environment}-open-webui-instance-profile"
+  role = aws_iam_role.open_webui.name
+}
