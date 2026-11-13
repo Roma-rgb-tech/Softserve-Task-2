@@ -31,6 +31,7 @@ jobs:
       TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
       TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
       TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+      TF_VAR_route53_delegation_set_id: ${{ vars.ROUTE53_DELEGATION_SET_ID }}
       ACTION: ${{ inputs.action }}
 
     defaults:
