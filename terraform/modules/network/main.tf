@@ -133,7 +133,7 @@ resource "aws_network_acl" "db" {
   subnet_ids = aws_subnet.db[*].id
 
   dynamic "ingress" {
-    for_each = var.private_subnet_cidrs
+    for_each = var.db_client_cidrs
     content {
       rule_no    = 100 + ingress.key
       action     = "allow"
@@ -145,7 +145,7 @@ resource "aws_network_acl" "db" {
   }
 
   dynamic "egress" {
-    for_each = var.private_subnet_cidrs
+    for_each = var.db_client_cidrs
     content {
       rule_no    = 100 + egress.key
       action     = "allow"

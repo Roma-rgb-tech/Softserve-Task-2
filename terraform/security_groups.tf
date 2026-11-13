@@ -80,6 +80,14 @@ resource "aws_security_group" "db" {
     security_groups = [aws_security_group.app.id]
   }
 
+  ingress {
+    description     = "PostgreSQL from Open WebUI"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.open_webui.id]
+  }
+
   tags = {
     Name = "${var.environment}-db-sg"
   }
@@ -111,7 +119,7 @@ resource "aws_security_group" "monitoring" {
     from_port       = 9090
     to_port         = 9090
     protocol        = "tcp"
-    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id]
+    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id, aws_security_group.open_webui.id]
   }
 
   egress {
@@ -134,11 +142,11 @@ resource "aws_security_group" "alb" {
   vpc_id      = module.network.vpc_id
 
   ingress {
-    description = "HTTP from monitoring host"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.public_subnet_cidrs[1]]
+    description     = "HTTP from Open WebUI"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    security_groups = [aws_security_group.open_webui.id]
   }
 
   egress {
@@ -151,5 +159,40 @@ resource "aws_security_group" "alb" {
 
   tags = {
     Name = "${var.environment}-alb-sg"
+  }
+}
+
+resource "aws_security_group" "open_webui" {
+  name        = "${var.environment}-open-webui-sg"
+  description = "Open WebUI host"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "Open WebUI from admin IP"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_cidr]
+  }
+
+  ingress {
+    description     = "SSH from bastion only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  egress {
+    description = "Outbound for AWS APIs, RDS, ALB and Prometheus"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-open-webui-sg"
   }
 }
