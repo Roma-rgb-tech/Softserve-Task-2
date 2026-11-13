@@ -18,8 +18,8 @@ locals {
   }
 
   datasources = {
-    prometheus = { type = "prometheus", uid = grafana_data_source.prometheus.id }
-    cloudwatch = { type = "cloudwatch", uid = grafana_data_source.cloudwatch.id }
+    prometheus = { type = "prometheus", uid = grafana_data_source.prometheus.uid }
+    cloudwatch = { type = "cloudwatch", uid = grafana_data_source.cloudwatch.uid }
   }
 
   cloudwatch_query = {
@@ -28,7 +28,7 @@ locals {
     metricQueryType  = 0
     metricEditorMode = 0
     region           = "default"
-    matchExact       = false
+    matchExact       = true
     period           = ""
     id               = ""
     expression       = ""
