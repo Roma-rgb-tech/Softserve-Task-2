@@ -29,3 +29,15 @@ output "alerts_topic_arn" {
 output "open_webui_url" {
   value = "http://${aws_instance.open_webui.public_ip}:8080"
 }
+
+output "route53_name_servers" {
+  value = aws_route53_zone.main.name_servers
+}
+
+output "grafana_domain_url" {
+  value = "http://${aws_route53_record.grafana.fqdn}:3000"
+}
+
+output "open_webui_domain_url" {
+  value = "http://${aws_route53_record.open_webui.fqdn}:8080"
+}
