@@ -16,6 +16,24 @@ locals {
     infrastructure = grafana_folder.infrastructure.uid
     database       = grafana_folder.database.uid
   }
+
+  datasources = {
+    prometheus = { type = "prometheus", uid = grafana_data_source.prometheus.uid }
+    cloudwatch = { type = "cloudwatch", uid = grafana_data_source.cloudwatch.uid }
+  }
+
+  cloudwatch_query = {
+    datasource       = local.datasources.cloudwatch
+    queryMode        = "Metrics"
+    metricQueryType  = 0
+    metricEditorMode = 0
+    region           = "default"
+    matchExact       = true
+    period           = ""
+    id               = ""
+    expression       = ""
+    label            = ""
+  }
 }
 
 resource "grafana_folder" "infrastructure" {
@@ -24,6 +42,10 @@ resource "grafana_folder" "infrastructure" {
 
 resource "grafana_folder" "database" {
   title = "Database"
+}
+
+resource "grafana_folder" "llm" {
+  title = "LLM"
 }
 
 data "http" "community_dashboard" {
