@@ -72,6 +72,8 @@ locals {
     prometheus   = "prometheus.service"
     alertmanager = "prometheus-alertmanager.service"
     grafana      = "grafana-server.service"
+    docker       = "docker.service"
+    open-webui   = "open-webui.service"
   }
 
   service_rules = {
