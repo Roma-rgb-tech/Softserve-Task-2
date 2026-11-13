@@ -118,3 +118,8 @@ variable "domain_name" {
     error_message = "domain_name must be a lowercase domain name without a trailing dot, for example example.pp.ua"
   }
 }
+
+variable "route53_delegation_set_id" {
+  description = "Reusable delegation set ID so the hosted zone keeps the same name servers"
+  type        = string
+}
