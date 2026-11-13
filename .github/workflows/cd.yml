@@ -30,6 +30,7 @@ jobs:
       TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
       TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
       TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
       ACTION: ${{ inputs.action }}
 
     defaults:
