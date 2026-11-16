@@ -186,3 +186,56 @@ resource "aws_iam_instance_profile" "open_webui" {
   name = "${var.environment}-open-webui-instance-profile"
   role = aws_iam_role.open_webui.name
 }
+
+resource "aws_iam_role" "keycloak" {
+  name = "${var.environment}-keycloak-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "ec2.amazonaws.com"
+        }
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "keycloak_secrets_read" {
+  name = "secrets-read"
+  role = aws_iam_role.keycloak.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ReadKeycloakParameters"
+        Effect = "Allow"
+        Action = "ssm:GetParameter"
+        Resource = [
+          aws_ssm_parameter.keycloak_admin_password.arn,
+          aws_ssm_parameter.keycloak_db_password.arn
+        ]
+      },
+      {
+        Sid      = "ReadDatabaseMasterSecret"
+        Effect   = "Allow"
+        Action   = "secretsmanager:GetSecretValue"
+        Resource = aws_db_instance.postgres.master_user_secret[0].secret_arn
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "keycloak_ssm" {
+  role       = aws_iam_role.keycloak.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_instance_profile" "keycloak" {
+  name = "${var.environment}-keycloak-instance-profile"
+  role = aws_iam_role.keycloak.name
+}
