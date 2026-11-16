@@ -123,3 +123,9 @@ variable "route53_delegation_set_id" {
   description = "Reusable delegation set ID so the hosted zone keeps the same name servers"
   type        = string
 }
+
+variable "site_instance_type" {
+  description = "EC2 instance type for the test site"
+  type        = string
+  default     = "t3.micro"
+}
