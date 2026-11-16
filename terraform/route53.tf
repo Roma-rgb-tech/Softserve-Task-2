@@ -23,3 +23,11 @@ resource "aws_route53_record" "open_webui" {
   ttl     = 60
   records = [aws_instance.open_webui.public_ip]
 }
+
+resource "aws_route53_record" "site" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "site.${var.domain_name}"
+  type    = "A"
+  ttl     = 60
+  records = [aws_instance.site.public_ip]
+}
