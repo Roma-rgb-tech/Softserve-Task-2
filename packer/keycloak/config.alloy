@@ -1,0 +1,29 @@
+prometheus.exporter.unix "node" {
+  enable_collectors = ["systemd"]
+
+  systemd {
+    unit_include = "(docker|keycloak|alloy)\\.service"
+  }
+}
+
+prometheus.scrape "node" {
+  targets    = prometheus.exporter.unix.node.targets
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
+prometheus.scrape "keycloak" {
+  targets      = [{"__address__" = "127.0.0.1:9000"}]
+  metrics_path = "/metrics"
+  job_name     = "keycloak"
+  forward_to   = [prometheus.remote_write.monitoring.receiver]
+}
+
+prometheus.remote_write "monitoring" {
+  endpoint {
+    url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
+  }
+
+  external_labels = {
+    role = "keycloak",
+  }
+}
