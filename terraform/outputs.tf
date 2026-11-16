@@ -41,3 +41,7 @@ output "grafana_domain_url" {
 output "open_webui_domain_url" {
   value = "http://${aws_route53_record.open_webui.fqdn}:8080"
 }
+
+output "site_url" {
+  value = "http://${aws_route53_record.site.fqdn}"
+}
