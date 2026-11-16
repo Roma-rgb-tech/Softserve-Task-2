@@ -99,11 +99,11 @@ resource "aws_security_group" "monitoring" {
   vpc_id      = module.network.vpc_id
 
   ingress {
-    description = "Grafana from admin IP"
-    from_port   = 3000
-    to_port     = 3000
-    protocol    = "tcp"
-    cidr_blocks = [var.admin_cidr]
+    description     = "Grafana from public ALB"
+    from_port       = 3000
+    to_port         = 3000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_alb.id]
   }
 
   ingress {
@@ -168,11 +168,11 @@ resource "aws_security_group" "open_webui" {
   vpc_id      = module.network.vpc_id
 
   ingress {
-    description = "Open WebUI from admin IP"
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = [var.admin_cidr]
+    description     = "Open WebUI from public ALB"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_alb.id]
   }
 
   ingress {
@@ -194,5 +194,49 @@ resource "aws_security_group" "open_webui" {
 
   tags = {
     Name = "${var.environment}-open-webui-sg"
+  }
+}
+
+resource "aws_security_group" "web_alb" {
+  name        = "${var.environment}-web-alb-sg"
+  description = "Public ALB in front of Grafana and Open WebUI"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "HTTP from internet for redirect to HTTPS"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    #tfsec:ignore:aws-ec2-no-public-ingress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTPS from internet"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    #tfsec:ignore:aws-ec2-no-public-ingress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Grafana on monitoring host"
+    from_port   = 3000
+    to_port     = 3000
+    protocol    = "tcp"
+    cidr_blocks = var.public_subnet_cidrs
+  }
+
+  egress {
+    description = "Open WebUI host"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = var.public_subnet_cidrs
+  }
+
+  tags = {
+    Name = "${var.environment}-web-alb-sg"
   }
 }
