@@ -1,0 +1,17 @@
+[Unit]
+Description=Keycloak
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/keycloak.env
+
+[Service]
+EnvironmentFile=/etc/default/keycloak
+ExecStartPre=-/usr/bin/docker rm -f keycloak
+ExecStart=/usr/bin/docker run --rm --name keycloak --network host --env-file /etc/keycloak.env ${KEYCLOAK_IMAGE} start --optimized
+ExecStop=/usr/bin/docker stop keycloak
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
