@@ -119,7 +119,7 @@ resource "aws_security_group" "monitoring" {
     from_port       = 9090
     to_port         = 9090
     protocol        = "tcp"
-    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id, aws_security_group.open_webui.id]
+    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id, aws_security_group.open_webui.id, aws_security_group.site.id]
   }
 
   egress {
@@ -194,5 +194,40 @@ resource "aws_security_group" "open_webui" {
 
   tags = {
     Name = "${var.environment}-open-webui-sg"
+  }
+}
+
+resource "aws_security_group" "site" {
+  name        = "${var.environment}-site-sg"
+  description = "Test site behind nginx"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description = "HTTP for admin IP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = [var.admin_cidr]
+  }
+
+  ingress {
+    description     = "SSH from bastion only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.bastion.id]
+  }
+
+  egress {
+    description = "Outbound for packages, OAuth providers and Prometheus"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-site-sg"
   }
 }
