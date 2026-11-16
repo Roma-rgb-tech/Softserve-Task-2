@@ -57,3 +57,18 @@ data "aws_ami" "open_webui" {
     values = ["available"]
   }
 }
+
+data "aws_ami" "keycloak" {
+  most_recent = true
+  owners      = ["self"]
+
+  filter {
+    name   = "tag:Role"
+    values = ["keycloak"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
