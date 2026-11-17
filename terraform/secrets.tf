@@ -67,7 +67,7 @@ resource "random_password" "keycloak_db" {
   special = false
 }
 
-#tfsec:ignore:aws-ssm-secret-use-cusomer-key
+#tfsec:ignore:aws-ssm-secret-use-customer-key
 resource "aws_ssm_parameter" "keycloak_admin_password" {
   name  = "/${lower(var.environment)}/keycloak/admin-password"
   type  = "SecureString"
