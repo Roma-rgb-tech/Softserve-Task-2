@@ -129,3 +129,8 @@ variable "keycloak_instance_type" {
   type        = string
   default     = "t3.medium"
 }
+
+variable "vpn_cidrs" {
+  description = "Public egress CIDRs of the corporate VPN allowed to reach the web ALB"
+  type        = list(string)
+}
