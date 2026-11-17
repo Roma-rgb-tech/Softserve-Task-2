@@ -88,6 +88,14 @@ resource "aws_security_group" "db" {
     security_groups = [aws_security_group.open_webui.id]
   }
 
+  ingress {
+    description     = "PostgreSQL from Keycloak"
+    from_port       = 5432
+    to_port         = 5432
+    protocol        = "tcp"
+    security_groups = [aws_security_group.keycloak.id]
+  }
+
   tags = {
     Name = "${var.environment}-db-sg"
   }
@@ -119,7 +127,7 @@ resource "aws_security_group" "monitoring" {
     from_port       = 9090
     to_port         = 9090
     protocol        = "tcp"
-    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id, aws_security_group.open_webui.id]
+    security_groups = [aws_security_group.app.id, aws_security_group.bastion.id, aws_security_group.open_webui.id, aws_security_group.keycloak.id]
   }
 
   egress {
@@ -236,7 +244,66 @@ resource "aws_security_group" "web_alb" {
     cidr_blocks = var.public_subnet_cidrs
   }
 
+  egress {
+    description = "Keycloak in private subnets"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
+  egress {
+    description = "Keycloak management port for health checks"
+    from_port   = 9000
+    to_port     = 9000
+    protocol    = "tcp"
+    cidr_blocks = var.private_subnet_cidrs
+  }
+
   tags = {
     Name = "${var.environment}-web-alb-sg"
+  }
+}
+
+resource "aws_security_group" "keycloak" {
+  name        = "${var.environment}-keycloak-sg"
+  description = "Keycloak behind public ALB"
+  vpc_id      = module.network.vpc_id
+
+  ingress {
+    description     = "Keycloak HTTP from public ALB"
+    from_port       = 8080
+    to_port         = 8080
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_alb.id]
+  }
+
+  ingress {
+    description     = "Keycloak health checks from public ALB"
+    from_port       = 9000
+    to_port         = 9000
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_alb.id]
+  }
+
+  ingress {
+    description     = "SSH from bastion only"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    security_groups = [aws_security_group.web_alb.id]
+  }
+
+  egress {
+    description = "Outbound for RDS, AWS APIs, Identity providers and Prometheus"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    #tfsec:ignore:aws-ec2-no-public-egress-sgr
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name = "${var.environment}-keycloak-sg"
   }
 }
