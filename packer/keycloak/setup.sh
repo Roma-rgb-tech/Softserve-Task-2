@@ -5,7 +5,7 @@ export DEBIAN_FRONTEND=noninteractive
 cloud-init status --wait
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y --no-install-recommends curl gpg unzip docker.io docker-buildx postgresql-client
+apt-get install -y --no-install-recommends curl gpg unzip openjdk-21-jre-headless postgresql-client
 
 curl -fsSL https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
 unzip -q /tmp/awscliv2.zip -d /tmp
@@ -13,10 +13,23 @@ unzip -q /tmp/awscliv2.zip -d /tmp
 aws --version
 rm -rf /tmp/aws /tmp/awscliv2.zip
 
-systemctl enable --now docker
-docker build --build-arg KEYCLOAK_VERSION="${KEYCLOAK_VERSION}" -t "keycloak:${KEYCLOAK_VERSION}" - < /tmp/Dockerfile
-docker run --rm "keycloak:${KEYCLOAK_VERSION}" --version
-echo "KEYCLOAK_IMAGE=keycloak:${KEYCLOAK_VERSION}" > /etc/default/keycloak
+useradd --system --home-dir /opt/keycloak --shell /usr/sbin/nologin keycloak
+
+KC_URL="https://github.com/keycloak/keycloak/releases/download/${KEYCLOAK_VERSION}/keycloak-${KEYCLOAK_VERSION}.zip"
+curl -fsSL "$KC_URL" -o /tmp/keycloak.zip
+echo "$(curl -fsSL "${KC_URL}.sha1" | awk '{print $1}')  /tmp/keycloak.zip" | sha1sum -c -
+unzip -q /tmp/keycloak.zip -d /opt
+mv "/opt/keycloak-${KEYCLOAK_VERSION}" /opt/keycloak
+rm -f /tmp/keycloak.zip
+
+cat >> /opt/keycloak/conf/keycloak.conf <<'EOF'
+db=postgres
+health-enabled=true
+metrics-enabled=true
+EOF
+
+chown -R keycloak:keycloak /opt/keycloak
+/opt/keycloak/bin/kc.sh --version
 install -m 0644 /tmp/keycloak.service /etc/systemd/system/keycloak.service
 
 mkdir -p /etc/apt/keyrings
@@ -28,6 +41,6 @@ install -m 0644 /tmp/config.alloy /etc/alloy/config.alloy
 alloy fmt /etc/alloy/config.alloy > /dev/null
 
 systemctl daemon-reload
-systemctl enable docker keycloak alloy
+systemctl enable keycloak alloy
 
 cloud-init clean --logs
