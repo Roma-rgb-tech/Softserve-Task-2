@@ -37,3 +37,11 @@ output "grafana_domain_url" {
 output "open_webui_domain_url" {
   value = "https://${aws_route53_record.open_webui.fqdn}"
 }
+
+output "keycloak_url" {
+  value = "https://${aws_route53_record.keycloak.fqdn}"
+}
+
+output "keycloak_admin_password_parameter" {
+  value = aws_ssm_parameter.keycloak_admin_password.name
+}
