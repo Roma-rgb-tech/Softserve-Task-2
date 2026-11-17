@@ -1,0 +1,18 @@
+[Unit]
+Description=Keycloak
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=/etc/keycloak.env
+
+[Service]
+User=keycloak
+Group=keycloak
+EnvironmentFile=/etc/keycloak.env
+ExecStart=/opt/keycloak/bin/kc.sh start-dev
+SuccessExitStatus=143
+LimitNOFILE=102642
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
