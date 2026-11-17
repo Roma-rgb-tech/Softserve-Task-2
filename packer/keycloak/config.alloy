@@ -2,7 +2,7 @@ prometheus.exporter.unix "node" {
   enable_collectors = ["systemd"]
 
   systemd {
-    unit_include = "(docker|keycloak|alloy)\\.service"
+    unit_include = "(keycloak|alloy)\\.service"
   }
 }
 
