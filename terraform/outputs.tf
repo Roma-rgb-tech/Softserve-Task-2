@@ -45,3 +45,15 @@ output "keycloak_url" {
 output "keycloak_admin_password_parameter" {
   value = aws_ssm_parameter.keycloak_admin_password.name
 }
+
+output "web_alb_security_group_id" {
+  value = aws_security_group.web_alb.id
+}
+
+output "grafana_oidc_client_secret_parameter" {
+  value = aws_ssm_parameter.grafana_oidc_client_secret.name
+}
+
+output "open_webui_oidc_client_secret_parameter" {
+  value = aws_ssm_parameter.open_webui_oidc_client_secret.name
+}
