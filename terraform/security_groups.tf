@@ -291,7 +291,7 @@ resource "aws_security_group" "keycloak" {
     from_port       = 22
     to_port         = 22
     protocol        = "tcp"
-    security_groups = [aws_security_group.web_alb.id]
+    security_groups = [aws_security_group.bastion.id]
   }
 
   egress {
