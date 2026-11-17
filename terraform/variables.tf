@@ -123,3 +123,14 @@ variable "route53_delegation_set_id" {
   description = "Reusable delegation set ID so the hosted zone keeps the same name servers"
   type        = string
 }
+
+variable "keycloak_instance_type" {
+  description = "EC2 instance type for Keycloak"
+  type        = string
+  default     = "t3.medium"
+}
+
+variable "vpn_cidrs" {
+  description = "Public egress CIDRs of the corporate VPN allowed to reach the web ALB"
+  type        = list(string)
+}

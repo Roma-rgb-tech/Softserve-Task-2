@@ -1,0 +1,37 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "PROMETHEUS_REMOTE_WRITE_URL=http://${monitoring_ip}:9090/api/v1/write" >> /etc/default/alloy
+systemctl restart alloy
+
+db_password=$(aws ssm get-parameter --region "${region}" --name "${db_password_parameter}" --with-decryption --query Parameter.Value --output text)
+admin_password=$(aws ssm get-parameter --region "${region}" --name "${admin_password_parameter}" --with-decryption --query Parameter.Value --output text)
+
+export PGHOST="${db_host}" PGDATABASE="${db_name}" PGUSER="${db_master_username}" PGSSLMODE=require
+PGPASSWORD=$(aws secretsmanager get-secret-value --region "${region}" --secret-id "${db_master_secret_arn}" --query SecretString --output text | python3 -c 'import json, sys; print(json.load(sys.stdin)["password"])')
+export PGPASSWORD
+
+until pg_isready -q; do sleep 5; done
+
+psql -v ON_ERROR_STOP=1 -v password="$db_password" <<'SQL'
+SELECT 'CREATE ROLE keycloak LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'keycloak')\gexec
+ALTER ROLE keycloak WITH PASSWORD :'password';
+GRANT keycloak TO CURRENT_USER;
+SELECT 'CREATE DATABASE keycloak OWNER keycloak' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'keycloak')\gexec
+SQL
+unset PGPASSWORD
+
+(umask 077 && cat > /etc/keycloak.env <<EOF
+KC_DB_URL=jdbc:postgresql://${db_host}:5432/keycloak?sslmode=require
+KC_DB_USERNAME=keycloak
+KC_DB_PASSWORD=$db_password
+KC_HOSTNAME=https://${hostname}
+KC_HTTP_ENABLED=true
+KC_HTTP_HOST=0.0.0.0
+KC_PROXY_HEADERS=xforwarded
+KC_BOOTSTRAP_ADMIN_USERNAME=admin
+KC_BOOTSTRAP_ADMIN_PASSWORD=$admin_password
+EOF
+)
+
+systemctl start keycloak
