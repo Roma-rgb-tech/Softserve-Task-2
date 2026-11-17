@@ -88,7 +88,7 @@ build {
   sources = ["source.amazon-ebs.keycloak"]
 
   provisioner "file" {
-    sources     = ["config.alloy", "keycloak.service", "Dockerfile"]
+    sources     = ["config.alloy", "keycloak.service"]
     destination = "/tmp/"
   }
 
