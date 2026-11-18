@@ -20,7 +20,7 @@ resource "keycloak_oidc_identity_provider" "gitlab" {
   user_info_url      = "https://gitlab.com/oauth/userinfo"
   jwks_url           = "https://gitlab.com/oauth/discovery/keys"
   validate_signature = true
-  default_scopes     = "openid profile email"
+  default_scopes     = "openid profile email read_user"
   trust_email        = true
   sync_mode          = "IMPORT"
 }
