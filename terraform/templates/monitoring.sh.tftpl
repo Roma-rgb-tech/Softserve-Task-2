@@ -3,6 +3,7 @@ set -euo pipefail
 
 password=$(aws ssm get-parameter --region "${region}" --name "${grafana_password_parameter}" --with-decryption --query Parameter.Value --output text)
 echo "GF_SECURITY_ADMIN_PASSWORD=$password" >> /etc/default/grafana-server
+echo "GF_SERVER_ROOT_URL=${grafana_root_url}" >> /etc/default/grafana-server
 chmod 0600 /etc/default/grafana-server
 systemctl enable --now grafana-server
 
