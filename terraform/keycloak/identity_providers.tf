@@ -10,6 +10,7 @@ resource "keycloak_oidc_github_identity_provider" "github" {
 resource "keycloak_oidc_identity_provider" "gitlab" {
   realm              = keycloak_realm.main.id
   alias              = "gitlab"
+  provider_id        = "gitlab"
   display_name       = "GitLab"
   client_id          = var.gitlab_client_id
   client_secret      = var.gitlab_client_secret
