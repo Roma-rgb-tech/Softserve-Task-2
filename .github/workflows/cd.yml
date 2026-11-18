@@ -24,7 +24,7 @@ jobs:
   cd:
     name: "Terraform ${{ inputs.action }}"
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       TF_VAR_admin_cidr: ${{ vars.ADMIN_CIDR }}
       TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
@@ -33,6 +33,10 @@ jobs:
       TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
       TF_VAR_route53_delegation_set_id: ${{ vars.ROUTE53_DELEGATION_SET_ID }}
       TF_VAR_vpn_cidrs: ${{ vars.VPN_CIDRS }}
+      TF_VAR_github_client_id: ${{ vars.OAUTH_GITHUB_CLIENT_ID }}
+      TF_VAR_github_client_secret: ${{ secrets.OAUTH_GITHUB_CLIENT_SECRET }}
+      TF_VAR_gitlab_client_id: ${{ vars.OAUTH_GITLAB_CLIENT_ID }}
+      TF_VAR_gitlab_client_secret: ${{ secrets.OAUTH_GITLAB_CLIENT_SECRET }}
       ACTION: ${{ inputs.action }}
 
     defaults:
@@ -58,7 +62,6 @@ jobs:
       - name: Terraform Init
         run: terraform init -input=false
 
-
       - name: Terraform Apply
         if: env.ACTION == 'apply'
         run: terraform apply -auto-approve -input=false
@@ -67,6 +70,8 @@ jobs:
         run: |
           echo "GRAFANA_URL=$(terraform output -raw grafana_url 2>/dev/null || true)" >> "$GITHUB_ENV"
           echo "MONITORING_SG_ID=$(terraform output -raw monitoring_security_group_id 2>/dev/null || true)" >> "$GITHUB_ENV"
+          echo "KEYCLOAK_URL=$(terraform output -raw keycloak_url 2>/dev/null || true)" >> "$GITHUB_ENV"
+          echo "WEB_ALB_SG_ID=$(terraform output -raw web_alb_security_group_id 2>/dev/null || true)" >> "$GITHUB_ENV"
           echo "RUNNER_CIDR=$(curl -fsS https://checkip.amazonaws.com)/32" >> "$GITHUB_ENV"
 
       - name: Allow runner to reach Grafana
@@ -87,6 +92,25 @@ jobs:
       - name: Revoke runner access to Grafana
         if: always() && env.MONITORING_SG_ID != ''
         run: aws ec2 revoke-security-group-ingress --group-id "$MONITORING_SG_ID" --protocol tcp --port 3000 --cidr "$RUNNER_CIDR" || true
+
+      - name: Allow runner to reach Keycloak
+        if: env.WEB_ALB_SG_ID != ''
+        run: aws ec2 authorize-security-group-ingress --group-id "$WEB_ALB_SG_ID" --protocol tcp --port 443 --cidr "$RUNNER_CIDR"
+
+      - name: Wait for Keycloak
+        if: env.WEB_ALB_SG_ID != ''
+        run: curl -fsS --retry 60 --retry-delay 10 --retry-all-errors "$KEYCLOAK_URL/realms/master" > /dev/null
+
+      - name: Keycloak ${{ inputs.action }}
+        if: env.WEB_ALB_SG_ID != ''
+        working-directory: ./terraform/keycloak
+        run: |
+          terraform init -input=false
+          terraform "$ACTION" -auto-approve -input=false
+
+      - name: Revoke runner access to Keycloak
+        if: always() && env.WEB_ALB_SG_ID != ''
+        run: aws ec2 revoke-security-group-ingress --group-id "$WEB_ALB_SG_ID" --protocol tcp --port 443 --cidr "$RUNNER_CIDR" || true
 
       - name: Terraform Destroy
         if: env.ACTION == 'destroy'
