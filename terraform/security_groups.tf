@@ -277,6 +277,13 @@ resource "aws_security_group" "keycloak" {
   }
 
   ingress {
+    description = "Keycloak backchannel from Grafana and Open WebUI hosts"
+    from_port   = 8080
+    to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = var.public_subnet_cidrs
+  }
+  ingress {
     description     = "Keycloak health checks from public ALB"
     from_port       = 9000
     to_port         = 9000

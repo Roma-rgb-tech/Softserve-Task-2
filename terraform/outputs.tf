@@ -57,3 +57,7 @@ output "grafana_oidc_client_secret_parameter" {
 output "open_webui_oidc_client_secret_parameter" {
   value = aws_ssm_parameter.open_webui_oidc_client_secret.name
 }
+
+output "keycloak_private_url" {
+  value = "http://${aws_instance.keycloak.private_ip}:8080"
+}

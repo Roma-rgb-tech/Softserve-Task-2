@@ -8,6 +8,7 @@ resource "aws_instance" "monitoring" {
   user_data = templatefile("${path.module}/templates/monitoring.sh.tftpl", {
     region                     = var.aws_region
     grafana_password_parameter = aws_ssm_parameter.grafana_admin_password.name
+    grafana_root_url           = "https://${aws_route53_record.grafana.fqdn}"
     slack_webhook_parameter    = aws_ssm_parameter.slack_webhook_url.name
     alertmanager_config = templatefile("${path.module}/templates/alertmanager.yml.tftpl", {
       topic_arn = aws_sns_topic.alerts.arn
