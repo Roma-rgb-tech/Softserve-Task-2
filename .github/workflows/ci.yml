@@ -51,15 +51,15 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./terraform
+        working-directory: ./terraform/aws
 
       - name: Terraform Validate
         run: terraform validate
-        working-directory: ./terraform
+        working-directory: ./terraform/aws
 
       - name: Terraform Plan
         run: terraform plan -no-color -lock=false -input=false
-        working-directory: ./terraform
+        working-directory: ./terraform/aws
 
   packer:
     name: "Packer Validate (${{ matrix.template }})"
