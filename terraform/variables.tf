@@ -70,7 +70,7 @@ variable "bastion_instance_type" {
 variable "app_instance_type" {
   description = "Instance type for LLM instances in the ASG"
   type        = string
-  default     = "t3.small"
+  default     = "m7i.large"
 }
 
 variable "db_instance_type" {
