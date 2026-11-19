@@ -134,3 +134,9 @@ variable "vpn_cidrs" {
   description = "Public egress CIDRs of the corporate VPN allowed to reach the web ALB"
   type        = list(string)
 }
+
+variable "keycloak_realm" {
+  description = "Keycloak realm that Open WebUI users sign in to"
+  type        = string
+  default     = "softserve"
+}
