@@ -1,13 +1,13 @@
 output "bastion_public_ip" {
-  value = aws_instance.bastion.public_ip
+  value = module.bastion.public_ip
 }
 
 output "monitoring_public_ip" {
-  value = aws_instance.monitoring.public_ip
+  value = module.monitoring.public_ip
 }
 
 output "grafana_url" {
-  value = "http://${aws_instance.monitoring.public_ip}:3000"
+  value = "http://${module.monitoring.public_ip}:3000"
 }
 
 output "grafana_admin_password_parameter" {
@@ -19,7 +19,7 @@ output "monitoring_security_group_id" {
 }
 
 output "alb_dns_name" {
-  value = aws_lb.llm.dns_name
+  value = module.llm.alb_dns_name
 }
 
 output "alerts_topic_arn" {
@@ -31,15 +31,15 @@ output "route53_name_servers" {
 }
 
 output "grafana_domain_url" {
-  value = "https://${aws_route53_record.grafana.fqdn}"
+  value = module.web_alb.urls["grafana"]
 }
 
 output "open_webui_domain_url" {
-  value = "https://${aws_route53_record.open_webui.fqdn}"
+  value = module.web_alb.urls["open-webui"]
 }
 
 output "keycloak_url" {
-  value = "https://${aws_route53_record.keycloak.fqdn}"
+  value = module.web_alb.urls["keycloak"]
 }
 
 output "keycloak_admin_password_parameter" {
@@ -59,5 +59,5 @@ output "open_webui_oidc_client_secret_parameter" {
 }
 
 output "keycloak_private_url" {
-  value = "http://${aws_instance.keycloak.private_ip}:8080"
+  value = "http://${module.keycloak.private_ip}:8080"
 }
