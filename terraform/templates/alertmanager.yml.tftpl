@@ -14,6 +14,7 @@ receivers:
       - api_url_file: /etc/prometheus/slack_webhook_url
         send_resolved: true
         title: '[{{ .Status | toUpper }}] {{ .CommonLabels.alertname }}'
+        title_link: '{{ (index .Alerts 0).GeneratorURL }}'
         text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ "\n" }}{{ end }}'
     sns_configs:
       - topic_arn: ${topic_arn}
