@@ -6,6 +6,7 @@ systemctl restart alloy
 
 db_password=$(aws ssm get-parameter --region "${region}" --name "${db_password_parameter}" --with-decryption --query Parameter.Value --output text)
 secret_key=$(aws ssm get-parameter --region "${region}" --name "${secret_key_parameter}" --with-decryption --query Parameter.Value --output text)
+oidc_client_secret=$(aws ssm get-parameter --region "${region}" --name "${oidc_client_secret_parameter}" --with-decryption --query Parameter.Value --output text)
 
 export PGHOST="${db_host}" PGDATABASE="${db_name}" PGUSER="${db_master_username}" PGSSLMODE=require
 PGPASSWORD=$(aws secretsmanager get-secret-value --region "${region}" --secret-id "${db_master_secret_arn}" --query SecretString --output text | python3 -c 'import json, sys; print(json.load(sys.stdin)["password"])')
@@ -26,6 +27,22 @@ DATABASE_URL=postgresql://openwebui:$db_password@${db_host}:5432/openwebui?sslmo
 WEBUI_SECRET_KEY=$secret_key
 OLLAMA_BASE_URL=http://${ollama_host}
 ENABLE_SIGNUP=false
+WEBUI_URL=${open_webui_url}
+ENABLE_LOGIN_FORM=false
+ENABLE_OAUTH_SIGNUP=true
+OAUTH_MERGE_ACCOUNTS_BY_EMAIL=true
+OAUTH_PROVIDER_NAME=Keycloak
+OAUTH_CLIENT_ID=open-webui
+OAUTH_CLIENT_SECRET=$oidc_client_secret
+OPENID_PROVIDER_URL=${openid_provider_url}
+OPENID_REDIRECT_URI=${open_webui_url}/oauth/oidc/callback
+OAUTH_SCOPES=openid email profile
+OAUTH_CODE_CHALLENGE_METHOD=S256
+ENABLE_OAUTH_ROLE_MANAGEMENT=true
+OAUTH_ROLES_CLAIM=roles
+OAUTH_ALLOWED_ROLES=viewer,editor,admin
+OAUTH_ADMIN_ROLES=admin
+BYPASS_MODEL_ACCESS_CONTROL=true
 ENABLE_OTEL=true
 ENABLE_OTEL_METRICS=true
 OTEL_EXPORTER_OTLP_ENDPOINT=http://127.0.0.1:4317

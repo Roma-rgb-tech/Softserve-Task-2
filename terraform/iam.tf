@@ -164,7 +164,8 @@ resource "aws_iam_role_policy" "open_webui_secrets_read" {
         Action = "ssm:GetParameter"
         Resource = [
           aws_ssm_parameter.open_webui_db_password.arn,
-          aws_ssm_parameter.open_webui_secret_key.arn
+          aws_ssm_parameter.open_webui_secret_key.arn,
+          aws_ssm_parameter.open_webui_oidc_client_secret.arn
         ]
       },
       {

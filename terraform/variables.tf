@@ -70,7 +70,7 @@ variable "bastion_instance_type" {
 variable "app_instance_type" {
   description = "Instance type for LLM instances in the ASG"
   type        = string
-  default     = "t3.small"
+  default     = "m7i.large"
 }
 
 variable "db_instance_type" {
@@ -133,4 +133,10 @@ variable "keycloak_instance_type" {
 variable "vpn_cidrs" {
   description = "Public egress CIDRs of the corporate VPN allowed to reach the web ALB"
   type        = list(string)
+}
+
+variable "keycloak_realm" {
+  description = "Keycloak realm that Open WebUI users sign in to"
+  type        = string
+  default     = "softserve"
 }
