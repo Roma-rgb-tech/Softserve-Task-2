@@ -1,6 +1,6 @@
-resource "aws_db_subnet_group" "main" {
+resource "aws_db_subnet_group" "this" {
   name       = "${lower(var.environment)}-db-subnet-group"
-  subnet_ids = module.network.db_subnet_ids
+  subnet_ids = var.subnet_ids
 
   tags = {
     Name = "${var.environment}-db-subnet-group"
@@ -9,22 +9,22 @@ resource "aws_db_subnet_group" "main" {
 
 #tfsec:ignore:aws-rds-enable-performance-insights
 #tfsec:ignore:aws-rds-enable-deletion-protection
-resource "aws_db_instance" "postgres" {
+resource "aws_db_instance" "this" {
   identifier     = "${lower(var.environment)}-postgres"
   engine         = "postgres"
   engine_version = "16"
-  instance_class = var.db_instance_class
+  instance_class = var.instance_class
 
   allocated_storage = 20
   storage_type      = "gp3"
   storage_encrypted = true
 
-  db_name                     = "llmdb"
-  username                    = "llm_admin"
+  db_name                     = var.db_name
+  username                    = var.username
   manage_master_user_password = true
 
-  db_subnet_group_name   = aws_db_subnet_group.main.name
-  vpc_security_group_ids = [aws_security_group.db.id]
+  db_subnet_group_name   = aws_db_subnet_group.this.name
+  vpc_security_group_ids = var.security_group_ids
   publicly_accessible    = false
   multi_az               = false
 

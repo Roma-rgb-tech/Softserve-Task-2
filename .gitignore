@@ -14,5 +14,5 @@ override.tf.json
 *.pem
 *.pub
 *.log
-terraform/modules/**/.terraform.lock.hcl
+terraform/aws/modules/**/.terraform.lock.hcl
 packer/**/manifest.json
