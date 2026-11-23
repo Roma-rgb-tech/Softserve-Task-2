@@ -18,7 +18,7 @@ locals {
       unit   = "none"
       calc   = "lastNotNull"
       steps  = [{ color = "red", value = null }, { color = "orange", value = 1 }, { color = "green", value = 2 }]
-      target = { refId = "A", datasource = local.datasources.prometheus, instant = true, expr = "min(aws_applicationelb_healthy_host_count_minimum)" }
+      target = { refId = "A", datasource = local.datasources.prometheus, instant = true, expr = "min(aws_applicationelb_healthy_host_count_minimum{dimension_TargetGroup=~\"targetgroup/.*-llm-tg/.*\"})" }
     },
     {
       title  = "LLM requests"
