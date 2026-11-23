@@ -1,6 +1,6 @@
 locals {
-  llm_alb_search    = "SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" \"llm-alb\"', '%s', 60)"
-  llm_target_search = "SEARCH('{AWS/ApplicationELB,TargetGroup} MetricName=\"RequestCountPerTarget\" \"llm-tg\"', 'Sum', 60)"
+  llm_alb_search    = "SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" llm alb', '%s', 60)"
+  llm_target_search = "SEARCH('{AWS/ApplicationELB,TargetGroup} MetricName=\"RequestCountPerTarget\" llm', 'Sum', 60)"
 
   llm_owui_requests = "{__name__=~\"http_server_requests(_total)?\", role=\"open-webui\"}"
   llm_owui_duration = "{__name__=~\"http_server_duration(_milliseconds)?_bucket\", role=\"open-webui\"}"
