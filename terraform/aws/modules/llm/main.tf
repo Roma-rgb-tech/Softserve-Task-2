@@ -105,6 +105,10 @@ resource "aws_autoscaling_group" "this" {
     value               = "${var.environment}-llm"
     propagate_at_launch = true
   }
+
+  lifecycle {
+    ignore_changes = [desired_capacity]
+  }
 }
 
 resource "aws_autoscaling_policy" "cpu" {
@@ -119,6 +123,23 @@ resource "aws_autoscaling_policy" "cpu" {
 
     target_value = var.cpu_target
   }
+}
+
+resource "aws_autoscaling_policy" "requests" {
+  name                   = "${var.environment}-llm-requests-target"
+  autoscaling_group_name = aws_autoscaling_group.this.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    predefined_metric_specification {
+      predefined_metric_type = "ALBRequestCountPerTarget"
+      resource_label         = "${aws_lb.this.arn_suffix}/${aws_lb_target_group.this.arn_suffix}"
+    }
+
+    target_value = var.request_target
+  }
+
+  depends_on = [aws_lb_listener.http]
 }
 
 resource "aws_lb" "this" {
@@ -136,10 +157,11 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "this" {
-  name     = "${lower(var.environment)}-llm-tg"
-  port     = 11434
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  name                          = "${lower(var.environment)}-llm-tg"
+  port                          = 11434
+  protocol                      = "HTTP"
+  vpc_id                        = var.vpc_id
+  load_balancing_algorithm_type = "least_outstanding_requests"
 
   health_check {
     path                = "/"
