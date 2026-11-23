@@ -142,6 +142,14 @@ locals {
         { refId = "B", datasource = local.datasources.prometheus, expr = "histogram_quantile(0.95, sum by (le) (rate(${local.llm_owui_duration}[5m])))", legendFormat = "p95" },
       ]
     },
+    { title = "Ollama requests per instance"
+      unit  = "none"
+      targets = [{
+        refId        = "A"
+        datasource   = local.datasources.prometheus
+        expr         = "sum by (instance) (increase(ollama_requests_total{role=\"ollama\", path=~\"/api/(chat|generate)\"}[5m]))"
+        legendFormat = "{{instance}}"
+    }] }
   ]
 
   llm_dashboard = {
