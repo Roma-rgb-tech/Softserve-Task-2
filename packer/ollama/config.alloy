@@ -11,6 +11,43 @@ prometheus.scrape "node" {
   forward_to = [prometheus.remote_write.monitoring.receiver]
 }
 
+loki.source.journal "ollama" {
+  matches    = "_SYSTEMD_UNIT=ollama.service"
+  labels     = { job = "ollama" }
+  forward_to = [loki.process.ollama.receiver]
+}
+
+loki.process "ollama" {
+  stage.regex {
+    expression = `\[GIN\][^|]+\|\s+(?P<status>\d{3})\s+\|[^|]+\|[^|]+\|\s+(?P<method>[A-Z]+)\s+"(?P<path>[^"]+)"`
+  }
+
+  stage.labels {
+    values = {
+      status = "",
+      path   = "",
+    }
+  }
+
+  stage.metrics {
+    metric.counter {
+      name        = "requests_total"
+      prefix      = "ollama_"
+      description = "Ollama API requests by path and status"
+      source      = "path"
+      action      = "inc"
+    }
+  }
+
+  forward_to = []
+}
+
+prometheus.scrape "alloy" {
+  targets    = [{"__address__" = "127.0.0.1:12345", "instance" = constants.hostname}]
+  job_name   = "ollama-requests"
+  forward_to = [prometheus.remote_write.monitoring.receiver]
+}
+
 prometheus.remote_write "monitoring" {
   endpoint {
     url = sys.env("PROMETHEUS_REMOTE_WRITE_URL")
