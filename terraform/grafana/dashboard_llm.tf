@@ -1,6 +1,7 @@
 locals {
-  llm_alb_search    = "SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" llm alb', '%s', 60)"
-  llm_target_search = "SEARCH('{AWS/ApplicationELB,TargetGroup} MetricName=\"RequestCountPerTarget\" llm', 'Sum', 60)"
+  llm_alb_sum       = "SUM(SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" llm alb', '%s', 60))"
+  llm_alb_max       = "MAX(SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" llm alb', '%s', 60))"
+  llm_target_search = "SUM(SEARCH('{AWS/ApplicationELB,TargetGroup} MetricName=\"RequestCountPerTarget\" llm', 'Sum', 60))"
 
   llm_owui_requests = "{__name__=~\"http_server_requests(_total)?\", role=\"open-webui\"}"
   llm_owui_duration = "{__name__=~\"http_server_duration(_milliseconds)?_bucket\", role=\"open-webui\"}"
@@ -27,14 +28,14 @@ locals {
       unit   = "none"
       calc   = "sum"
       steps  = [{ color = "blue", value = null }]
-      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "RequestCount", "Sum"), label = "requests" })
+      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_sum, "RequestCount", "Sum"), label = "requests" })
     },
     {
       title  = "LLM p95 response time"
       unit   = "s"
       calc   = "mean"
       steps  = [{ color = "green", value = null }, { color = "orange", value = 30 }, { color = "red", value = 120 }]
-      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "p95"), label = "p95" })
+      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_max, "TargetResponseTime", "p95"), label = "p95" })
     },
     {
       title  = "Open WebUI users"
@@ -77,15 +78,15 @@ locals {
       title = "LLM requests per minute (ALB)"
       unit  = "none"
       targets = [
-        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "RequestCount", "Sum"), label = "all requests" }),
+        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_sum, "RequestCount", "Sum"), label = "all requests" }),
       ]
     },
     {
       title = "LLM response time (ALB)"
       unit  = "s"
       targets = [
-        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "Average"), label = "average" }),
-        merge(local.cloudwatch_query, { refId = "B", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "p95"), label = "p95" }),
+        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_max, "TargetResponseTime", "Average"), label = "average" }),
+        merge(local.cloudwatch_query, { refId = "B", metricEditorMode = 1, expression = format(local.llm_alb_max, "TargetResponseTime", "p95"), label = "p95" }),
       ]
     },
     {
