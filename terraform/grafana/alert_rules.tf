@@ -118,7 +118,7 @@ locals {
     "llm-test-elb-high-host-count" = {
       expr      = local.promql.alb_hhc
       operator  = "lt"
-      threshold = 2
+      threshold = 1
       severity  = "high"
       no_data   = "Alerting"
       summary   = "Healthy hosts in {{ $labels.dimension_TargetGroup }}: {{ $values.A.Value }}"
