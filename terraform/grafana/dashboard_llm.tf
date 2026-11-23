@@ -1,9 +1,11 @@
 locals {
-  llm_alb_dimensions = { LoadBalancer = "*" }
+  llm_alb_search    = "SEARCH('{AWS/ApplicationELB,LoadBalancer} MetricName=\"%s\" \"llm-alb\"', '%s', 60)"
+  llm_target_search = "SEARCH('{AWS/ApplicationELB,TargetGroup} MetricName=\"RequestCountPerTarget\" \"llm-tg\"', 'Sum', 60)"
 
   llm_owui_requests = "{__name__=~\"http_server_requests(_total)?\", role=\"open-webui\"}"
   llm_owui_duration = "{__name__=~\"http_server_duration(_milliseconds)?_bucket\", role=\"open-webui\"}"
   llm_chat_route    = "http_route=~\".*/chat/completions\""
+  llm_generations   = "ollama_requests_total{role=\"ollama\", path=~\"/api/(chat|generate)\"}"
 
   llm_stats = [
     {
@@ -14,25 +16,25 @@ locals {
       target = { refId = "A", datasource = local.datasources.prometheus, instant = true, expr = "count(node_systemd_unit_state{name=\"ollama.service\", state=\"active\"} == 1) or vector(0)" }
     },
     {
-      title  = "ALB healthy hosts"
+      title  = "LLM healthy hosts"
       unit   = "none"
       calc   = "lastNotNull"
       steps  = [{ color = "red", value = null }, { color = "orange", value = 1 }, { color = "green", value = 2 }]
       target = { refId = "A", datasource = local.datasources.prometheus, instant = true, expr = "min(aws_applicationelb_healthy_host_count_minimum{dimension_TargetGroup=~\"targetgroup/.*-llm-tg/.*\"})" }
     },
     {
-      title  = "LLM requests"
+      title  = "LLM requests (ALB)"
       unit   = "none"
       calc   = "sum"
       steps  = [{ color = "blue", value = null }]
-      target = merge(local.cloudwatch_query, { refId = "A", namespace = "AWS/ApplicationELB", metricName = "RequestCount", statistic = "Sum", dimensions = local.llm_alb_dimensions })
+      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "RequestCount", "Sum"), label = "requests" })
     },
     {
       title  = "LLM p95 response time"
       unit   = "s"
       calc   = "mean"
       steps  = [{ color = "green", value = null }, { color = "orange", value = 30 }, { color = "red", value = 120 }]
-      target = merge(local.cloudwatch_query, { refId = "A", namespace = "AWS/ApplicationELB", metricName = "TargetResponseTime", statistic = "p95", dimensions = local.llm_alb_dimensions })
+      target = merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "p95"), label = "p95" })
     },
     {
       title  = "Open WebUI users"
@@ -72,19 +74,36 @@ locals {
       }]
     },
     {
-      title = "LLM requests (ALB)"
+      title = "LLM requests per minute (ALB)"
       unit  = "none"
       targets = [
-        merge(local.cloudwatch_query, { refId = "A", namespace = "AWS/ApplicationELB", metricName = "RequestCount", statistic = "Sum", dimensions = local.llm_alb_dimensions }),
+        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "RequestCount", "Sum"), label = "all requests" }),
       ]
     },
     {
       title = "LLM response time (ALB)"
       unit  = "s"
       targets = [
-        merge(local.cloudwatch_query, { refId = "A", namespace = "AWS/ApplicationELB", metricName = "TargetResponseTime", statistic = "Average", dimensions = local.llm_alb_dimensions, label = "average" }),
-        merge(local.cloudwatch_query, { refId = "B", namespace = "AWS/ApplicationELB", metricName = "TargetResponseTime", statistic = "p95", dimensions = local.llm_alb_dimensions, label = "p95" }),
+        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "Average"), label = "average" }),
+        merge(local.cloudwatch_query, { refId = "B", metricEditorMode = 1, expression = format(local.llm_alb_search, "TargetResponseTime", "p95"), label = "p95" }),
       ]
+    },
+    {
+      title = "Requests per instance per minute (scaling metric, target 5)"
+      unit  = "none"
+      targets = [
+        merge(local.cloudwatch_query, { refId = "A", metricEditorMode = 1, expression = local.llm_target_search, label = "RequestCountPerTarget" }),
+      ]
+    },
+    {
+      title = "Ollama generations per minute per instance"
+      unit  = "none"
+      targets = [{
+        refId        = "A"
+        datasource   = local.datasources.prometheus
+        expr         = "sum by (instance) (rate(${local.llm_generations}[5m])) * 60"
+        legendFormat = "{{instance}}"
+      }]
     },
     {
       title = "ALB target errors"
@@ -142,14 +161,6 @@ locals {
         { refId = "B", datasource = local.datasources.prometheus, expr = "histogram_quantile(0.95, sum by (le) (rate(${local.llm_owui_duration}[5m])))", legendFormat = "p95" },
       ]
     },
-    { title = "Ollama requests per instance"
-      unit  = "none"
-      targets = [{
-        refId        = "A"
-        datasource   = local.datasources.prometheus
-        expr         = "sum by (instance) (increase(ollama_requests_total{role=\"ollama\", path=~\"/api/(chat|generate)\"}[5m]))"
-        legendFormat = "{{instance}}"
-    }] }
   ]
 
   llm_dashboard = {
