@@ -61,3 +61,9 @@ variable "cpu_target" {
   type        = number
   default     = 60
 }
+
+variable "request_target" {
+  description = "Average number of requests per minute per Ollama instance the Auto Scaling Group keeps"
+  type        = number
+  default     = 3
+}
