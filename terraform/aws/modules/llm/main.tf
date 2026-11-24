@@ -105,6 +105,9 @@ resource "aws_autoscaling_group" "this" {
     value               = "${var.environment}-llm"
     propagate_at_launch = true
   }
+  lifecycle {
+    ignore_changes = [desired_capacity]
+  }
 }
 
 resource "aws_autoscaling_policy" "cpu" {
@@ -136,10 +139,11 @@ resource "aws_lb" "this" {
 }
 
 resource "aws_lb_target_group" "this" {
-  name     = "${lower(var.environment)}-llm-tg"
-  port     = 11434
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
+  name                          = "${lower(var.environment)}-llm-tg"
+  port                          = 11434
+  protocol                      = "HTTP"
+  vpc_id                        = var.vpc_id
+  load_balancing_algorithm_type = "least_outstanding_requests"
 
   health_check {
     path                = "/"
