@@ -67,3 +67,9 @@ variable "queue_target" {
   type        = number
   default     = 3
 }
+
+variable "messages_target" {
+  description = "Average number of chat messages per minute per Ollama instance the Auto Scaling Group keeps"
+  type        = number
+  default     = 2
+}
