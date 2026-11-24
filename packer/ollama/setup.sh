@@ -16,7 +16,8 @@ curl -fsSL --retry 5 --retry-delay 15 --retry-all-errors https://ollama.com/inst
 mkdir -p /etc/systemd/system/ollama.service.d
 printf '[Service]\nEnvironment="OLLAMA_HOST=127.0.0.1:11435"\nEnvironment="OLLAMA_KEEP_ALIVE=-1"\n' > /etc/systemd/system/ollama.service.d/override.conf
 systemctl daemon-reload
-systemctl enable --now ollama
+systemctl enable ollama
+systemctl restart ollama
 until curl -fs http://127.0.0.1:11435 > /dev/null; do sleep 2; done
 HOME=/root OLLAMA_HOST=127.0.0.1:11435 ollama pull qwen2.5:3b
 HOME=/root OLLAMA_HOST=127.0.0.1:11435 ollama list | grep qwen2.5:3b
