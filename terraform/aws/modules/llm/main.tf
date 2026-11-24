@@ -134,6 +134,11 @@ locals {
       label  = "Messages in queue per Ollama instance"
       target = var.queue_target
     }
+    messages = {
+      metric = "MessagesPerMinute"
+      label  = "Chat messages per minute per Ollama instance"
+      target = var.messages_target
+    }
   }
 }
 
