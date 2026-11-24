@@ -25,7 +25,7 @@ HOME=/root OLLAMA_HOST=127.0.0.1:11435 ollama list | grep qwen2.5:3b
 rm -f /etc/nginx/sites-enabled/default
 install -m 0644 /tmp/nginx.conf /etc/nginx/conf.d/ollama.conf
 nginx -t
-systemctl enable nginx
+systemctl disable nginx
 systemctl restart nginx
 until curl -fs http://127.0.0.1:11434 > /dev/null; do sleep 2; done
 
