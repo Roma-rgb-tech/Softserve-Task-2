@@ -1,0 +1,18 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "PROMETHEUS_REMOTE_WRITE_URL=http://${monitoring_ip}:9090/api/v1/write" >> /etc/default/alloy
+systemctl restart alloy
+
+cat > /etc/systemd/system/ollama.service.d/tuning.conf <<'EOF'
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=${num_parallel}"
+Environment="OLLAMA_MAX_QUEUE=${max_queue}"
+EOF
+systemctl daemon-reload
+systemctl restart ollama
+
+until curl -fs http://127.0.0.1:11434 > /dev/null; do sleep 2; done
+printf 'FROM ${model}\nPARAMETER num_thread ${num_thread}\n' > /tmp/Modelfile
+HOME=/root ollama create ${model} -f /tmp/Modelfile
+rm -f /tmp/Modelfile
