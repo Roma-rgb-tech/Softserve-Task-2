@@ -83,7 +83,7 @@ build {
   sources = ["source.amazon-ebs.ollama"]
 
   provisioner "file" {
-    sources     = ["config.alloy"]
+    sources     = ["config.alloy", "nginx.conf"]
     destination = "/tmp/"
   }
 
