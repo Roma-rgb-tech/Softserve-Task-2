@@ -140,3 +140,21 @@ variable "keycloak_realm" {
   type        = string
   default     = "softserve"
 }
+
+variable "ollama_num_parallel" {
+  description = "Number of chat messages each Ollam instance generates at the same time"
+  type        = number
+  default     = 2
+}
+
+variable "ollama_max_queue" {
+  description = "Maximum number of messages waiting on each Ollama instance before it answers 503"
+  type        = number
+  default     = 10
+}
+
+variable "ollama_num_thread" {
+  description = "CPU threads Ollama uses for generation, equal to the vCPU count of the instance type"
+  type        = number
+  default     = 2
+}
