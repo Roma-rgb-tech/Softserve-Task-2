@@ -86,6 +86,8 @@ resource "aws_autoscaling_group" "this" {
   health_check_type         = "ELB"
   health_check_grace_period = 300
   target_group_arns         = [aws_lb_target_group.this.arn]
+  enabled_metrics           = ["GroupInServiceInstances"]
+  metrics_granularity       = "1Minute"
 
   launch_template {
     id      = aws_launch_template.this.id
@@ -105,6 +107,7 @@ resource "aws_autoscaling_group" "this" {
     value               = "${var.environment}-llm"
     propagate_at_launch = true
   }
+
   lifecycle {
     ignore_changes = [desired_capacity]
   }
@@ -121,6 +124,75 @@ resource "aws_autoscaling_policy" "cpu" {
     }
 
     target_value = var.cpu_target
+  }
+}
+
+locals {
+  custom_scaling = {
+    queue = {
+      metric = "MessagesInQueue"
+      label  = "Messages in queue per Ollama instance"
+      target = var.queue_target
+    }
+  }
+}
+
+resource "aws_autoscaling_policy" "custom" {
+  for_each = local.custom_scaling
+
+  name                   = "${var.environment}-llm-${each.key}-target"
+  autoscaling_group_name = aws_autoscaling_group.this.name
+  policy_type            = "TargetTrackingScaling"
+
+  target_tracking_configuration {
+    customized_metric_specification {
+      metrics {
+        id          = "value"
+        return_data = false
+
+        metric_stat {
+          metric {
+            namespace   = "LLM"
+            metric_name = each.value.metric
+
+            dimensions {
+              name  = "Environment"
+              value = var.environment
+            }
+          }
+
+          stat = "Average"
+        }
+      }
+
+      metrics {
+        id          = "instances"
+        return_data = false
+
+        metric_stat {
+          metric {
+            namespace   = "AWS/AutoScaling"
+            metric_name = "GroupInServiceInstances"
+
+            dimensions {
+              name  = "AutoScalingGroupName"
+              value = aws_autoscaling_group.this.name
+            }
+          }
+
+          stat = "Average"
+        }
+      }
+
+      metrics {
+        id          = "per_instance"
+        expression  = "value / instances"
+        label       = each.value.label
+        return_data = true
+      }
+    }
+
+    target_value = each.value.target
   }
 }
 
