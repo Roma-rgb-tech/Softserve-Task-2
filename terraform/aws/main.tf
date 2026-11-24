@@ -52,6 +52,7 @@ module "monitoring" {
   key_name           = aws_key_pair.main.key_name
   user_data = templatefile("${path.module}/templates/monitoring.sh.tftpl", {
     region                     = var.aws_region
+    environment                = var.environment
     grafana_password_parameter = aws_ssm_parameter.grafana_admin_password.name
     grafana_root_url           = module.web_alb.urls["grafana"]
     slack_webhook_parameter    = aws_ssm_parameter.slack_webhook_url.name
@@ -80,6 +81,19 @@ module "monitoring" {
           "tag:GetResources"
         ]
         Resource = "*"
+      }
+    ]
+    cloudwatch-publish = [
+      {
+        Sid      = "PublishLlmScalingMetrics"
+        Effect   = "Allow"
+        Action   = "cloudwatch:PutMetricData"
+        Resource = "*"
+        Condition = {
+          StringEquals = {
+            "cloudwatch:namespace" = "LLM"
+          }
+        }
       }
     ]
     grafana-secret-read = [
