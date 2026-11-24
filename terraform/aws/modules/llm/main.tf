@@ -84,7 +84,7 @@ resource "aws_autoscaling_group" "this" {
   max_size                  = var.max_size
   desired_capacity          = var.desired_capacity
   health_check_type         = "ELB"
-  health_check_grace_period = 300
+  health_check_grace_period = 600
   target_group_arns         = [aws_lb_target_group.this.arn]
   enabled_metrics           = ["GroupInServiceInstances"]
   metrics_granularity       = "1Minute"
@@ -208,7 +208,7 @@ resource "aws_lb" "this" {
   security_groups            = var.alb_security_group_ids
   subnets                    = var.subnet_ids
   drop_invalid_header_fields = true
-  idle_timeout               = 300
+  idle_timeout               = 900
 
   tags = {
     Name = "${var.environment}-llm-alb"
