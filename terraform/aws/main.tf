@@ -207,8 +207,12 @@ module "llm" {
   key_name                    = aws_key_pair.main.key_name
   instance_security_group_ids = [aws_security_group.app.id]
   alb_security_group_ids      = [aws_security_group.alb.id]
-  user_data = templatefile("${path.module}/templates/alloy.sh.tftpl", {
+  user_data = templatefile("${path.module}/templates/ollama.sh.tftpl", {
     monitoring_ip = module.monitoring.private_ip
+    model         = "qwen2.5:3b"
+    num_parallel  = var.ollama_num_parallel
+    max_queue     = var.ollama_max_queue
+    num_thread    = var.ollama_num_thread
   })
 }
 
