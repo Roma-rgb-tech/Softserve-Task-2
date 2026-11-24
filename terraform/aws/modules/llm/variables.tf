@@ -65,7 +65,7 @@ variable "cpu_target" {
 variable "queue_target" {
   description = "Average number of chat messages waiting or generating on each Ollama instance the Auto Scaling Group keeps"
   type        = number
-  default     = 3
+  default     = 2
 }
 
 variable "messages_target" {
