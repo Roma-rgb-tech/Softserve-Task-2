@@ -48,6 +48,10 @@ resource "aws_launch_template" "this" {
   vpc_security_group_ids = var.instance_security_group_ids
   user_data              = base64encode(var.user_data)
 
+  monitoring {
+    enabled = true
+  }
+
   iam_instance_profile {
     name = aws_iam_instance_profile.this.name
   }
