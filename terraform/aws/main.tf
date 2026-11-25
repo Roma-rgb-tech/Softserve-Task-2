@@ -227,6 +227,8 @@ module "llm" {
     num_parallel  = var.ollama_num_parallel
     max_queue     = var.ollama_max_queue
     num_thread    = var.ollama_num_thread
+    asg_name      = "${var.environment}-llm-asg"
+    hook_name     = "ollama-ready"
   })
 }
 
