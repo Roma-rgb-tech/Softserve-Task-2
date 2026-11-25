@@ -13,6 +13,43 @@ data "aws_ami" "ollama" {
   }
 }
 
+data "aws_region" "current" {}
+
+data "aws_caller_identity" "current" {}
+
+locals {
+  asg_name  = "${var.environment}-llm-asg"
+  hook_name = "ollama-ready"
+
+  custom_scaling = {
+    queue = {
+      metric = "MessagesInQueue"
+      label  = "Messages in queue per Ollama instance"
+      target = var.queue_target
+    }
+    messages = {
+      metric = "MessagesPerMinute"
+      label  = "Chat messages per minute per Ollama instance"
+      target = var.messages_target
+    }
+  }
+
+  queue_alarms = {
+    high = {
+      comparison = "GreaterThanThreshold"
+      threshold  = var.queue_target
+      periods    = 1
+      policy     = "out"
+    }
+    low = {
+      comparison = "LessThanThreshold"
+      threshold  = var.scale_in_threshold
+      periods    = var.scale_in_minutes
+      policy     = "in"
+    }
+  }
+}
+
 resource "aws_iam_role" "this" {
   name = "${var.environment}-llm-role"
 
@@ -33,6 +70,23 @@ resource "aws_iam_role" "this" {
 resource "aws_iam_role_policy_attachment" "ssm" {
   role       = aws_iam_role.this.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+#tfsec:ignore:aws-iam-no-policy-wildcards
+resource "aws_iam_role_policy" "lifecycle" {
+  name = "${var.environment}-llm-lifecycle"
+  role = aws_iam_role.this.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = "autoscaling:CompleteLifecycleAction"
+        Resource = "arn:aws:autoscaling:${data.aws_region.current.region}:${data.aws_caller_identity.current.account_id}:autoScalingGroup:*:autoScalingGroupName/${local.asg_name}"
+      }
+    ]
+  })
 }
 
 resource "aws_iam_instance_profile" "this" {
@@ -82,7 +136,7 @@ resource "aws_launch_template" "this" {
 }
 
 resource "aws_autoscaling_group" "this" {
-  name                      = "${var.environment}-llm-asg"
+  name                      = local.asg_name
   vpc_zone_identifier       = var.subnet_ids
   min_size                  = var.min_size
   max_size                  = var.max_size
@@ -96,6 +150,18 @@ resource "aws_autoscaling_group" "this" {
   launch_template {
     id      = aws_launch_template.this.id
     version = aws_launch_template.this.latest_version
+  }
+
+  initial_lifecycle_hook {
+    name                 = local.hook_name
+    lifecycle_transition = "autoscaling:EC2_INSTANCE_LAUNCHING"
+    default_result       = "ABANDON"
+    heartbeat_timeout    = 1200
+  }
+
+  warm_pool {
+    pool_state                  = "Stopped"
+    max_group_prepared_capacity = var.max_size
   }
 
   instance_refresh {
@@ -115,6 +181,8 @@ resource "aws_autoscaling_group" "this" {
   lifecycle {
     ignore_changes = [desired_capacity]
   }
+
+  depends_on = [aws_iam_role_policy.lifecycle]
 }
 
 resource "aws_autoscaling_policy" "cpu" {
@@ -127,22 +195,8 @@ resource "aws_autoscaling_policy" "cpu" {
       predefined_metric_type = "ASGAverageCPUUtilization"
     }
 
-    target_value = var.cpu_target
-  }
-}
-
-locals {
-  custom_scaling = {
-    queue = {
-      metric = "MessagesInQueue"
-      label  = "Messages in queue per Ollama instance"
-      target = var.queue_target
-    }
-    messages = {
-      metric = "MessagesPerMinute"
-      label  = "Chat messages per minute per Ollama instance"
-      target = var.messages_target
-    }
+    target_value     = var.cpu_target
+    disable_scale_in = true
   }
 }
 
@@ -201,7 +255,90 @@ resource "aws_autoscaling_policy" "custom" {
       }
     }
 
-    target_value = each.value.target
+    target_value     = each.value.target
+    disable_scale_in = true
+  }
+}
+
+resource "aws_autoscaling_policy" "queue_out" {
+  name                      = "${var.environment}-llm-queue-step-out"
+  autoscaling_group_name    = aws_autoscaling_group.this.name
+  policy_type               = "StepScaling"
+  adjustment_type           = "ChangeInCapacity"
+  metric_aggregation_type   = "Average"
+  estimated_instance_warmup = 120
+
+  step_adjustment {
+    scaling_adjustment          = 1
+    metric_interval_lower_bound = 0
+    metric_interval_upper_bound = 2
+  }
+
+  step_adjustment {
+    scaling_adjustment          = 2
+    metric_interval_lower_bound = 2
+  }
+}
+
+resource "aws_autoscaling_policy" "queue_in" {
+  name                    = "${var.environment}-llm-queue-step-in"
+  autoscaling_group_name  = aws_autoscaling_group.this.name
+  policy_type             = "StepScaling"
+  adjustment_type         = "ChangeInCapacity"
+  metric_aggregation_type = "Average"
+
+  step_adjustment {
+    scaling_adjustment          = -1
+    metric_interval_upper_bound = 0
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "queue" {
+  for_each = local.queue_alarms
+
+  alarm_name          = "${var.environment}-llm-queue-${each.key}"
+  comparison_operator = each.value.comparison
+  threshold           = each.value.threshold
+  evaluation_periods  = each.value.periods
+  datapoints_to_alarm = each.value.periods
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [each.value.policy == "out" ? aws_autoscaling_policy.queue_out.arn : aws_autoscaling_policy.queue_in.arn]
+
+  metric_query {
+    id = "value"
+
+    metric {
+      namespace   = "LLM"
+      metric_name = "MessagesInQueue"
+      period      = 60
+      stat        = "Average"
+
+      dimensions = {
+        Environment = var.environment
+      }
+    }
+  }
+
+  metric_query {
+    id = "instances"
+
+    metric {
+      namespace   = "AWS/AutoScaling"
+      metric_name = "GroupInServiceInstances"
+      period      = 60
+      stat        = "Average"
+
+      dimensions = {
+        AutoScalingGroupName = aws_autoscaling_group.this.name
+      }
+    }
+  }
+
+  metric_query {
+    id          = "per_instance"
+    expression  = "value / instances"
+    label       = "In-flight requests per Ollama instance"
+    return_data = true
   }
 }
 
