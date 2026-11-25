@@ -158,3 +158,15 @@ variable "ollama_num_thread" {
   type        = number
   default     = 2
 }
+
+variable "keycloak_admin_password" {
+  description = "Keycloak bootstrap admin password, kept stable so a restored database still accepts it"
+  type        = string
+  sensitive   = true
+}
+
+variable "open_webui_secret_key" {
+  description = "Open WebUI JWT signing key, kept stable so user sessions survive a rebuild"
+  type        = string
+  sensitive   = true
+}
