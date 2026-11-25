@@ -30,11 +30,6 @@ resource "random_password" "open_webui_db" {
   special = false
 }
 
-resource "random_password" "open_webui_secret_key" {
-  length  = 64
-  special = false
-}
-
 #tfsec:ignore:aws-ssm-secret-use-customer-key
 resource "aws_ssm_parameter" "open_webui_db_password" {
   name  = "/${lower(var.environment)}/open-webui/db-password"
@@ -50,16 +45,11 @@ resource "aws_ssm_parameter" "open_webui_db_password" {
 resource "aws_ssm_parameter" "open_webui_secret_key" {
   name  = "/${lower(var.environment)}/open-webui/secret-key"
   type  = "SecureString"
-  value = random_password.open_webui_secret_key.result
+  value = var.open_webui_secret_key
 
   tags = {
     Name = "${var.environment}-open-webui-secret-key"
   }
-}
-
-resource "random_password" "keycloak_admin" {
-  length  = 32
-  special = false
 }
 
 resource "random_password" "keycloak_db" {
@@ -71,7 +61,7 @@ resource "random_password" "keycloak_db" {
 resource "aws_ssm_parameter" "keycloak_admin_password" {
   name  = "/${lower(var.environment)}/keycloak/admin-password"
   type  = "SecureString"
-  value = random_password.keycloak_admin.result
+  value = var.keycloak_admin_password
 
   tags = {
     Name = "${var.environment}-keycloak-admin-password"
