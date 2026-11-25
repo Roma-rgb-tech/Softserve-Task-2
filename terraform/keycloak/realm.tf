@@ -13,6 +13,8 @@ resource "keycloak_realm" "main" {
   registration_allowed     = false
   login_with_email_allowed = true
   ssl_required             = "external"
+  sso_session_idle_timeout = "24h"
+  sso_session_max_lifespan = "168h"
 }
 
 resource "keycloak_role" "realm" {

@@ -61,3 +61,27 @@ variable "cpu_target" {
   type        = number
   default     = 60
 }
+
+variable "queue_target" {
+  description = "Average number of chat messages waiting or generating on each Ollama instance the Auto Scaling Group keeps"
+  type        = number
+  default     = 2
+}
+
+variable "messages_target" {
+  description = "Average number of chat messages per minute per Ollama instance the Auto Scaling Group keeps"
+  type        = number
+  default     = 2
+}
+
+variable "scale_in_threshold" {
+  description = "In-flight requests per Ollama instance below which the group scales in"
+  type        = number
+  default     = 1
+}
+
+variable "scale_in_minutes" {
+  description = "Consecutive minutes below the scale-in threshold before removing an instance"
+  type        = number
+  default     = 5
+}

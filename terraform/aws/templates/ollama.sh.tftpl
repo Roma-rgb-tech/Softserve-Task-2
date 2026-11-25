@@ -1,0 +1,71 @@
+#!/bin/bash
+set -euo pipefail
+
+echo "PROMETHEUS_REMOTE_WRITE_URL=http://${monitoring_ip}:9090/api/v1/write" >> /etc/default/alloy
+systemctl restart alloy
+
+cat > /etc/systemd/system/ollama.service.d/tuning.conf <<'EOF'
+[Service]
+Environment="OLLAMA_NUM_PARALLEL=${num_parallel}"
+Environment="OLLAMA_MAX_QUEUE=${max_queue}"
+Environment="OLLAMA_LOAD_TIMEOUT=15m"
+EOF
+systemctl daemon-reload
+systemctl restart ollama
+
+export HOME=/root OLLAMA_HOST=127.0.0.1:11435
+until curl -fs http://127.0.0.1:11435 > /dev/null; do sleep 2; done
+printf 'FROM ${model}\nPARAMETER num_thread ${num_thread}\n' > /tmp/Modelfile
+ollama create ${model} -f /tmp/Modelfile
+rm -f /tmp/Modelfile
+
+cat > /usr/local/bin/ollama-ready <<'EOF'
+#!/bin/bash
+set -uo pipefail
+
+until curl -fs http://127.0.0.1:11435 > /dev/null; do sleep 2; done
+
+RESULT=CONTINUE
+curl -fsS --max-time 1200 http://127.0.0.1:11435/api/generate \
+  -d '{"model":"${model}","prompt":"hi","stream":false,"keep_alive":-1,"options":{"num_predict":1}}' > /dev/null || RESULT=ABANDON
+
+TOKEN=$(curl -fsS -X PUT http://169.254.169.254/latest/api/token -H "X-aws-ec2-metadata-token-ttl-seconds: 300")
+imds() { curl -fsS -H "X-aws-ec2-metadata-token: $TOKEN" "http://169.254.169.254/latest/meta-data/$1"; }
+INSTANCE_ID=$(imds instance-id)
+REGION=$(imds placement/region)
+until STATE=$(imds autoscaling/target-lifecycle-state); do sleep 5; done
+
+if [ "$RESULT" = "CONTINUE" ] && [ "$STATE" = "InService" ]; then
+  systemctl start nginx
+  until curl -fs http://127.0.0.1:11434 > /dev/null; do sleep 2; done
+fi
+
+for attempt in $(seq 1 30); do
+  aws autoscaling complete-lifecycle-action \
+    --region "$REGION" \
+    --auto-scaling-group-name ${asg_name} \
+    --lifecycle-hook-name ${hook_name} \
+    --instance-id "$INSTANCE_ID" \
+    --lifecycle-action-result "$RESULT" && break
+  sleep 10
+done
+EOF
+chmod 0755 /usr/local/bin/ollama-ready
+
+cat > /etc/systemd/system/ollama-ready.service <<'EOF'
+[Unit]
+Description=Warm up Ollama model and report readiness to Auto Scaling
+Wants=network-online.target ollama.service
+After=network-online.target ollama.service
+
+[Service]
+Type=oneshot
+Environment=HOME=/root
+ExecStart=/usr/local/bin/ollama-ready
+
+[Install]
+WantedBy=multi-user.target
+EOF
+systemctl daemon-reload
+systemctl enable ollama-ready
+systemctl start ollama-ready

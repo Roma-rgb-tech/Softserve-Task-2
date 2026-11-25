@@ -26,6 +26,11 @@ unset PGPASSWORD
 DATABASE_URL=postgresql://openwebui:$db_password@${db_host}:5432/openwebui?sslmode=require
 WEBUI_SECRET_KEY=$secret_key
 OLLAMA_BASE_URL=http://${ollama_host}
+AIOHTTP_CLIENT_TIMEOUT=900
+ENABLE_PERSISTENT_CONFIG=false
+ENABLE_TITLE_GENERATION=false
+ENABLE_TAGS_GENERATION=false
+ENABLE_FOLLOW_UP_GENERATION=false
 ENABLE_SIGNUP=false
 WEBUI_URL=${open_webui_url}
 ENABLE_LOGIN_FORM=false

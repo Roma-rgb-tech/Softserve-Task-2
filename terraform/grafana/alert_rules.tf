@@ -2,16 +2,17 @@ locals {
   host = "{{ $labels.instance }} ({{ $labels.role }})"
 
   promql = {
-    cpu     = "100 * (1 - avg by (instance, role) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))"
-    memory  = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)"
-    disk    = "max by (instance, role) (100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}))"
-    service = "max by (instance, role) (node_systemd_unit_state{name=\"%s\", state=\"active\"})"
-    rds_cpu = "max by (dimension_DBInstanceIdentifier) (aws_rds_cpuutilization_average)"
-    rds_mem = "min by (dimension_DBInstanceIdentifier) (aws_rds_freeable_memory_average)"
-    rds_sto = "min by (dimension_DBInstanceIdentifier) (aws_rds_free_storage_space_average)"
-    alb_hhc = "min by (dimension_TargetGroup) (aws_applicationelb_healthy_host_count_minimum)"
-    alb_4xx = "sum by (dimension_TargetGroup) (aws_applicationelb_httpcode_target_4_xx_count_sum)"
-    alb_5xx = "sum by (dimension_TargetGroup) (aws_applicationelb_httpcode_target_5_xx_count_sum)"
+    cpu         = "100 * (1 - avg by (instance, role) (rate(node_cpu_seconds_total{mode=\"idle\"}[5m])))"
+    memory      = "100 * (1 - node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)"
+    disk        = "max by (instance, role) (100 * (1 - node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"}))"
+    service     = "max by (instance, role) (node_systemd_unit_state{name=\"%s\", state=\"active\"})"
+    instance_up = "count(timestamp(up{role=\"%s\"}) > time() - 180) or vector(0)"
+    rds_cpu     = "max by (dimension_DBInstanceIdentifier) (aws_rds_cpuutilization_average)"
+    rds_mem     = "min by (dimension_DBInstanceIdentifier) (aws_rds_freeable_memory_average)"
+    rds_sto     = "min by (dimension_DBInstanceIdentifier) (aws_rds_free_storage_space_average)"
+    alb_hhc     = "min by (dimension_TargetGroup) (aws_applicationelb_healthy_host_count_minimum)"
+    alb_4xx     = "sum by (dimension_TargetGroup) (aws_applicationelb_httpcode_target_4_xx_count_sum)"
+    alb_5xx     = "sum by (dimension_TargetGroup) (aws_applicationelb_httpcode_target_5_xx_count_sum)"
   }
 
   ec2_rules = {
@@ -74,6 +75,7 @@ locals {
     grafana      = "grafana-server.service"
     docker       = "docker.service"
     open-webui   = "open-webui.service"
+    keycloak     = "keycloak.service"
   }
 
   service_rules = {
@@ -84,6 +86,19 @@ locals {
       severity  = "high"
       no_data   = "NoData"
       summary   = "${unit} is not active on ${local.host}"
+    }
+  }
+
+  instance_roles = ["bastion", "keycloak", "open-webui", "ollama"]
+
+  instance_rules = {
+    for role in local.instance_roles : "llm-test-ec2-instance-down-${role}" => {
+      expr      = format(local.promql.instance_up, role)
+      operator  = "lt"
+      threshold = 1
+      severity  = "high"
+      no_data   = "Alerting"
+      summary   = "No ${role} instance has reported metrics for 3 minutes"
     }
   }
 
@@ -142,9 +157,10 @@ locals {
   }
 
   rule_groups = {
-    ec2 = merge(local.ec2_rules, local.service_rules)
-    db  = local.db_rules
-    elb = local.elb_rules
+    ec2       = merge(local.ec2_rules, local.service_rules)
+    instances = local.instance_rules
+    db        = local.db_rules
+    elb       = local.elb_rules
   }
 }
 
@@ -164,7 +180,7 @@ resource "grafana_rule_group" "this" {
     content {
       name           = rule.key
       condition      = "C"
-      for            = "5m"
+      for            = each.key == "instances" ? "1m" : "5m"
       no_data_state  = rule.value.no_data
       exec_err_state = "Error"
 

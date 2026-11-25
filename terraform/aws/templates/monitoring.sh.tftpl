@@ -15,3 +15,46 @@ ${alertmanager_config}
 EOF
 amtool check-config /etc/prometheus/alertmanager.yml
 systemctl restart prometheus-alertmanager
+
+cat > /usr/local/bin/llm-scaling-metrics <<'EOF'
+#!/bin/bash
+set -euo pipefail
+
+query() {
+  curl -fsS --get http://127.0.0.1:9090/api/v1/query --data-urlencode "query=$1" \
+    | python3 -c 'import json, sys; r = json.load(sys.stdin)["data"]["result"]; print(round(float(r[0]["value"][1]), 2) if r else 0)'
+}
+
+queue=$(query 'sum(clamp_min(avg_over_time(nginx_connections_writing{role="ollama"}[1m]) - 1, 0)) or vector(0)')
+messages=$(query 'sum(rate({__name__=~"http_server_requests(_total)?", role="open-webui", http_route=~".*/chat/completions"}[2m])) * 60 or vector(0)')
+
+aws cloudwatch put-metric-data --region ${region} --namespace LLM --metric-data \
+  "MetricName=MessagesInQueue,Dimensions=[{Name=Environment,Value=${environment}}],Value=$queue,Unit=Count" \
+  "MetricName=MessagesPerMinute,Dimensions=[{Name=Environment,Value=${environment}}],Value=$messages,Unit=Count"
+EOF
+chmod 0755 /usr/local/bin/llm-scaling-metrics
+
+cat > /etc/systemd/system/llm-scaling-metrics.service <<'EOF'
+[Unit]
+Description=Publish LLM scaling metrics from Prometheus to CloudWatch
+After=prometheus.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/llm-scaling-metrics
+EOF
+
+cat > /etc/systemd/system/llm-scaling-metrics.timer <<'EOF'
+[Unit]
+Description=Publish LLM scaling metrics every minute
+
+[Timer]
+OnCalendar=*-*-* *:*:00
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now llm-scaling-metrics.timer
