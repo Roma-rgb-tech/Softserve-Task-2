@@ -73,3 +73,15 @@ variable "messages_target" {
   type        = number
   default     = 2
 }
+
+variable "scale_in_threshold" {
+  description = "In-flight requests per Ollama instance below which the group scales in"
+  type        = number
+  default     = 1
+}
+
+variable "scale_in_minutes" {
+  description = "Consecutive minutes below the scale-in threshold before removing an instance"
+  type        = number
+  default     = 5
+}
