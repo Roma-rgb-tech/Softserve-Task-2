@@ -27,6 +27,7 @@ db=postgres
 health-enabled=true
 metrics-enabled=true
 EOF
+/opt/keycloak/bin/kc.sh build
 
 chown -R keycloak:keycloak /opt/keycloak
 /opt/keycloak/bin/kc.sh --version
