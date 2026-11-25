@@ -30,6 +30,8 @@ jobs:
       TF_VAR_ssh_public_key: ${{ vars.SSH_PUBLIC_KEY }}
       TF_VAR_alert_email: ${{ vars.ALERT_EMAIL }}
       TF_VAR_slack_webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+      TF_VAR_keycloak_admin_password: ${{ secrets.KEYCLOAK_ADMIN_PASSWORD }}
+      TF_VAR_open_webui_secret_key: ${{ secrets.OPEN_WEBUI_SECRET_KEY }}
       TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
       TF_VAR_route53_delegation_set_id: ${{ vars.ROUTE53_DELEGATION_SET_ID }}
       TF_VAR_vpn_cidrs: ${{ vars.VPN_CIDRS }}
@@ -94,22 +96,22 @@ jobs:
         run: aws ec2 revoke-security-group-ingress --group-id "$MONITORING_SG_ID" --protocol tcp --port 3000 --cidr "$RUNNER_CIDR" || true
 
       - name: Allow runner to reach Keycloak
-        if: env.WEB_ALB_SG_ID != ''
+        if: env.WEB_ALB_SG_ID != '' && env.ACTION == 'apply'
         run: aws ec2 authorize-security-group-ingress --group-id "$WEB_ALB_SG_ID" --protocol tcp --port 443 --cidr "$RUNNER_CIDR"
 
       - name: Wait for Keycloak
-        if: env.WEB_ALB_SG_ID != ''
+        if: env.WEB_ALB_SG_ID != '' && env.ACTION == 'apply'
         run: curl -fsS --retry 60 --retry-delay 10 --retry-all-errors "$KEYCLOAK_URL/realms/master" > /dev/null
 
-      - name: Keycloak ${{ inputs.action }}
-        if: env.WEB_ALB_SG_ID != ''
+      - name: Keycloak apply
+        if: env.WEB_ALB_SG_ID != '' && env.ACTION == 'apply'
         working-directory: ./terraform/keycloak
         run: |
           terraform init -input=false
-          terraform "$ACTION" -auto-approve -input=false
+          terraform apply -auto-approve -input=false
 
       - name: Revoke runner access to Keycloak
-        if: always() && env.WEB_ALB_SG_ID != ''
+        if: always() && env.WEB_ALB_SG_ID != '' && env.ACTION == 'apply'
         run: aws ec2 revoke-security-group-ingress --group-id "$WEB_ALB_SG_ID" --protocol tcp --port 443 --cidr "$RUNNER_CIDR" || true
 
       - name: Terraform Destroy
