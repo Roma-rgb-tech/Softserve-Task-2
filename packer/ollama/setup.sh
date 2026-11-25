@@ -5,7 +5,13 @@ export DEBIAN_FRONTEND=noninteractive
 cloud-init status --wait
 apt-get update -y
 apt-get upgrade -y
-apt-get install -y curl gpg postgresql-client nginx prometheus-nginx-exporter
+apt-get install -y curl gpg unzip postgresql-client nginx prometheus-nginx-exporter
+
+curl -fsSL --retry 5 --retry-delay 15 --retry-all-errors https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /tmp/awscliv2.zip
+unzip -q /tmp/awscliv2.zip -d /tmp
+/tmp/aws/install
+rm -rf /tmp/aws /tmp/awscliv2.zip
+aws --version
 
 fallocate -l 2G /swapfile
 chmod 600 /swapfile
